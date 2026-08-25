@@ -7,10 +7,14 @@ import 'screens/category_list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/item_detail_screen.dart';
 import 'theme/app_theme.dart';
+import 'state/product_store.dart';
 
 /// Standalone demo entry point — lets you test/verify your screens in
 /// isolation before they're wired into the main app's navigation.
-void main() => runApp(const ProductDemoApp());
+void main() {
+  ProductStore.instance.setProducts(_sampleProducts); // seed once at startup
+  runApp(const ProductDemoApp());
+}
 
 class ProductDemoApp extends StatelessWidget {
   const ProductDemoApp({super.key});
@@ -77,23 +81,23 @@ class _DemoLauncher extends StatelessWidget {
           ElevatedButton(
             onPressed: () => _push(
               context,
-              CategoryListScreen(
-                categoryTitle: 'Category 1',
-                categorySubtitle: 'Subtitle',
-                filters: const ['filter 1', 'filter 2', 'Promotion'],
-                products: _sampleProducts,
-                onLoadMore: () async {
-                  await Future.delayed(const Duration(milliseconds: 400));
-                  return <Product>[]; // hook up real pagination here
-                },
-                onProductTap: (p) => _push(
-                  context,
-                  ItemDetailScreen(product: p, reviews: _sampleReviews),
+                  CategoryListScreen(
+                      categoryTitle: 'Category 1',
+                      categorySubtitle: 'Subtitle',
+                      filters: const ['filter 1', 'filter 2', 'Promotion'],
+                      products: ProductStore.instance.products,
+                      onLoadMore: () async {
+                        await Future.delayed(const Duration(milliseconds: 400));
+                        return <Product>[];
+                      },
+                      onProductTap: (p) => _push(
+                      context,
+                      ItemDetailScreen(product: p, reviews: _sampleReviews),
+                      ),
+                      onFavoriteToggle: (p, fav) {
+                        ProductStore.instance.toggleFavorite(p.id, fav);
+                    },
                 ),
-                onFavoriteToggle: (p, fav) {
-                  debugPrint('${p.name} favorite -> $fav');
-                },
-              ),
             ),
             child: const Text('Category / Browse listing'),
           ),
@@ -132,19 +136,13 @@ class _DemoLauncher extends StatelessWidget {
             child: const Text('Cart'),
           ),
           const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () => _push(
-              context,
-              FavoritesScreen(
-                favorites: _sampleProducts.where((p) => p.isFavorite).toList(),
-                onProductTap: (p) => _push(
+                  ElevatedButton(
+                  onPressed: () => _push(
                   context,
-                  ItemDetailScreen(product: p, reviews: _sampleReviews),
-                ),
-              ),
-            ),
-            child: const Text('Favorites'),
-          ),
+                  FavoritesScreen(favorites: ProductStore.instance.favorites),  // was: _sampleProducts.where(...)
+                  ),
+                  child: const Text('Favorites'),
+                  ),
           const SizedBox(height: 12),
         ],
       ),
