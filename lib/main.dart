@@ -10,6 +10,8 @@ import 'screens/favorites_screen.dart';
 import 'screens/item_detail_screen.dart';
 import 'theme/app_theme.dart';
 import 'state/product_store.dart';
+import 'login/welcome_page.dart';
+import 'screens/profile_page.dart';
 
 void main() {
   ProductStore.instance.setProducts(_sampleProducts);
@@ -26,7 +28,7 @@ class ProductDemoApp extends StatelessWidget {
       title: 'Steelverse Hardware Store',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: const HomeScreen(),
+      home: const WelcomePage(),
     );
   }
 }
@@ -72,7 +74,9 @@ final User defaultUser = User(
 );
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String username;
+
+  const HomeScreen({super.key, this.username = 'User'});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -161,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // App Header with Search Bar beside Cart
+                  // App Header with Search Bar, Cart, and Profile Icon
                   Row(
                     children: [
                       const Row(
@@ -241,6 +246,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         constraints: const BoxConstraints(),
                         icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 26),
                         onPressed: () => _openCart(context),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.person_outline, color: Colors.white, size: 26),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProfilePage(username: widget.username),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
