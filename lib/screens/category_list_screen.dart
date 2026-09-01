@@ -7,16 +7,7 @@ import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
 
 /// Corresponds to the "Category 1" screens in the Figma — both the plain
-/// listing and the "Promotion" filter state (struck-through price + promo
-/// price) are handled by the same screen: just tap the "Promotion" chip.
-///
-/// Wire-up notes for whoever connects this to real data:
-/// - Pass an initial [products] page from your API/repository.
-/// - [onLoadMore] is called when "View More Product" is tapped — return
-///   the next page and this screen appends it (simple client-side
-///   pagination stub; swap for real infinite-scroll/cursor paging later).
-/// - [onFilterChanged] lets a parent re-fetch from the backend per filter
-///   instead of filtering client-side, if preferred.
+/// listing and the filter states (Name sort, Price sort, Promotion filter).
 class CategoryListScreen extends StatefulWidget {
   final String categoryTitle;
   final String? categorySubtitle;
@@ -33,7 +24,7 @@ class CategoryListScreen extends StatefulWidget {
     required this.categoryTitle,
     this.categorySubtitle,
     this.bannerImageUrl,
-    this.filters = const ['filter 1', 'filter 2'],
+    this.filters = const ['filter 1', 'filter 2', 'Promotion'],
     required this.products,
     this.onLoadMore,
     this.onFilterChanged,
@@ -50,18 +41,80 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   late String _selectedFilter;
   bool _loadingMore = false;
 
+  // Sorting state flags
+  bool _nameAscending = true;  // true: A-Z, false: Z-A
+  bool _priceAscending = true; // true: Low-High, false: High-Low
+
   @override
   void initState() {
     super.initState();
     _products = List.of(widget.products);
-    _selectedFilter = widget.filters.isNotEmpty ? widget.filters.first : '';
+    _selectedFilter = widget.filters.isNotEmpty
+        ? _getFilterLabel(widget.filters.first)
+        : '';
   }
 
-  bool get _isPromotionFilter => _selectedFilter.toLowerCase() == 'promotion';
+  /// Maps 'filter 1', 'filter 2', or existing dynamic labels to current display text
+  String _getFilterLabel(String rawFilter) {
+    final lower = rawFilter.toLowerCase();
+    if (lower == 'filter 1' || lower.startsWith('name:')) {
+      return _nameAscending ? 'Name: A-Z' : 'Name: Z-A';
+    }
+    if (lower == 'filter 2' || lower.startsWith('price:')) {
+      return _priceAscending ? 'Price: Low-High' : 'Price: High-Low';
+    }
+    return rawFilter;
+  }
 
   List<Product> get _visibleProducts {
-    if (!_isPromotionFilter) return _products;
-    return _products.where((p) => p.hasPromo).toList();
+    List<Product> list = List.of(_products);
+
+    // Filter by promotion state
+    if (_selectedFilter.toLowerCase() == 'promotion') {
+      return list.where((p) => p.hasPromo).toList();
+    }
+
+    // Sort by Name (Filter 1)
+    if (_selectedFilter.startsWith('Name:')) {
+      list.sort((a, b) => _nameAscending
+          ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
+          : b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+    }
+    // Sort by Price (Filter 2)
+    else if (_selectedFilter.startsWith('Price:')) {
+      list.sort((a, b) {
+        final priceA = (a.hasPromo && a.promoPrice != null) ? a.promoPrice! : a.price;
+        final priceB = (b.hasPromo && b.promoPrice != null) ? b.promoPrice! : b.price;
+        return _priceAscending ? priceA.compareTo(priceB) : priceB.compareTo(priceA);
+      });
+    }
+
+    return list;
+  }
+
+  void _handleFilterTap(String selectedLabel) {
+    setState(() {
+      // Handle Filter 1 (Name)
+      if (selectedLabel.startsWith('Name:') || selectedLabel == 'filter 1') {
+        if (_selectedFilter.startsWith('Name:')) {
+          _nameAscending = !_nameAscending; // Toggle A-Z / Z-A on re-tap
+        }
+        _selectedFilter = _getFilterLabel('filter 1');
+      }
+      // Handle Filter 2 (Price)
+      else if (selectedLabel.startsWith('Price:') || selectedLabel == 'filter 2') {
+        if (_selectedFilter.startsWith('Price:')) {
+          _priceAscending = !_priceAscending; // Toggle Low-High / High-Low on re-tap
+        }
+        _selectedFilter = _getFilterLabel('filter 2');
+      }
+      // Handle other chips (e.g. 'Promotion')
+      else {
+        _selectedFilter = selectedLabel;
+      }
+    });
+
+    widget.onFilterChanged?.call(_selectedFilter);
   }
 
   Future<void> _handleLoadMore() async {
@@ -78,6 +131,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   @override
   Widget build(BuildContext context) {
     final visible = _visibleProducts;
+    final displayFilters = widget.filters.map((f) => _getFilterLabel(f)).toList();
 
     return Scaffold(
       body: SafeArea(
@@ -87,7 +141,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             SliverToBoxAdapter(
               child: ProductBannerHeader(
                 title: widget.categoryTitle,
-                subtitle: _isPromotionFilter
+                subtitle: _selectedFilter.toLowerCase() == 'promotion'
                     ? 'Promotion Included'
                     : widget.categorySubtitle,
                 bannerImageUrl: widget.bannerImageUrl,
@@ -98,12 +152,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: ProductFilterBar(
-                  filters: widget.filters,
+                  filters: displayFilters,
                   selected: _selectedFilter,
-                  onSelected: (f) {
-                    setState(() => _selectedFilter = f);
-                    widget.onFilterChanged?.call(f);
-                  },
+                  onSelected: _handleFilterTap,
                 ),
               ),
             ),

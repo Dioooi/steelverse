@@ -9,12 +9,14 @@ class CartScreen extends StatefulWidget {
   final List<CartItem> items;
   final void Function(List<CartItem> selectedItems)? onProceedToPayment;
   final void Function(CartItem item, bool isFavorite)? onFavoriteToggle;
+  final void Function(List<CartItem> updatedItems)? onCartUpdated;
 
   const CartScreen({
     super.key,
     required this.items,
     this.onProceedToPayment,
     this.onFavoriteToggle,
+    this.onCartUpdated,
   });
 
   @override
@@ -30,6 +32,18 @@ class _CartScreenState extends State<CartScreen> {
     _items = List.of(widget.items);
   }
 
+  @override
+  void didUpdateWidget(covariant CartScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.items != oldWidget.items) {
+      _items = List.of(widget.items);
+    }
+  }
+
+  void _notifyParent() {
+    widget.onCartUpdated?.call(List.of(_items));
+  }
+
   bool get _allSelected => _items.isNotEmpty && _items.every((i) => i.selected);
 
   double get _subtotal => _items
@@ -42,21 +56,38 @@ class _CartScreenState extends State<CartScreen> {
         item.selected = value ?? false;
       }
     });
+    _notifyParent();
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _items.removeAt(index);
+    });
+    _notifyParent();
+  }
+
+  void _updateQuantity(int index, int newQuantity) {
+    if (newQuantity <= 0) {
+      _removeItem(index);
+    } else {
+      setState(() {
+        _items[index] = CartItem(
+          product: _items[index].product,
+          quantity: newQuantity,
+          selected: _items[index].selected,
+        );
+      });
+      _notifyParent();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.divider),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          alignment: Alignment.centerLeft,
-          child: const Text('Search', style: TextStyle(color: AppColors.textSecondary)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
       body: Column(
@@ -80,21 +111,59 @@ class _CartScreenState extends State<CartScreen> {
               separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.divider),
               itemBuilder: (context, i) {
                 final item = _items[i];
-                return ProductListTile(
-                  product: item.product,
-                  showCheckbox: true,
-                  checked: item.selected,
-                  onCheckedChanged: (v) => setState(() => item.selected = v ?? false),
-                  onFavoriteChanged: (fav) {
-                    setState(() {
-                      _items[i] = CartItem(
-                        product: item.product.copyWith(isFavorite: fav),
-                        quantity: item.quantity,
-                        selected: item.selected,
-                      );
-                    });
-                    widget.onFavoriteToggle?.call(item, fav);
-                  },
+                return Dismissible(
+                  key: ValueKey(item.product.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (_) => _removeItem(i),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ProductListTile(
+                          product: item.product,
+                          showCheckbox: true,
+                          checked: item.selected,
+                          onCheckedChanged: (v) {
+                            setState(() => item.selected = v ?? false);
+                            _notifyParent();
+                          },
+                          onFavoriteChanged: (fav) {
+                            setState(() {
+                              _items[i] = CartItem(
+                                product: item.product.copyWith(isFavorite: fav),
+                                quantity: item.quantity,
+                                selected: item.selected,
+                              );
+                            });
+                            widget.onFavoriteToggle?.call(item, fav);
+                            _notifyParent();
+                          },
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, size: 20),
+                            onPressed: () => _updateQuantity(i, item.quantity - 1),
+                          ),
+                          Text('${item.quantity}'),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline, size: 20),
+                            onPressed: () => _updateQuantity(i, item.quantity + 1),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            onPressed: () => _removeItem(i),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -110,17 +179,22 @@ class _CartScreenState extends State<CartScreen> {
                       Checkbox(value: _allSelected, onChanged: _toggleSelectAll),
                       const Text('Select all'),
                       const Spacer(),
-                      Text('Subtotal : RM${_subtotal.toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Subtotal : RM${_subtotal.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _items.any((i) => i.selected)
-                        ? () => widget.onProceedToPayment
-                        ?.call(_items.where((i) => i.selected).toList())
-                        : null,
-                    child: const Text('Proceed Payment'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _items.any((i) => i.selected)
+                          ? () => widget.onProceedToPayment
+                          ?.call(_items.where((i) => i.selected).toList())
+                          : null,
+                      child: const Text('Proceed Payment'),
+                    ),
                   ),
                 ],
               ),
