@@ -1,12 +1,17 @@
+// lib/screens/cart_screen.dart
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
+import '../models/user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/product_list_tile.dart';
+import '../state/product_store.dart';
+import '/screens/payment_screen.dart';
 
 /// Corresponds to the "Cart" screen: per-item checkbox, favorite heart,
 /// select-all + subtotal footer, "Proceed Payment" CTA.
 class CartScreen extends StatefulWidget {
   final List<CartItem> items;
+  final User? user;
   final void Function(List<CartItem> selectedItems)? onProceedToPayment;
   final void Function(CartItem item, bool isFavorite)? onFavoriteToggle;
   final void Function(List<CartItem> updatedItems)? onCartUpdated;
@@ -14,6 +19,7 @@ class CartScreen extends StatefulWidget {
   const CartScreen({
     super.key,
     required this.items,
+    this.user,
     this.onProceedToPayment,
     this.onFavoriteToggle,
     this.onCartUpdated,
@@ -50,6 +56,12 @@ class _CartScreenState extends State<CartScreen> {
       .where((i) => i.selected)
       .fold(0.0, (sum, i) => sum + i.subtotal);
 
+  double get _originalTotal => _items
+      .where((i) => i.selected)
+      .fold(0.0, (sum, i) => sum + (i.product.price) * i.quantity);
+
+  double get _savings => _originalTotal - _subtotal;
+
   void _toggleSelectAll(bool? value) {
     setState(() {
       for (final item in _items) {
@@ -81,6 +93,45 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
+  void _proceedToPayment() {
+    final selectedItems = _items.where((i) => i.selected).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one item'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final user = widget.user ?? User(
+      name: 'Lee Jia Cheng',
+      phone: '(+60) 11-7281 2642',
+      address: 'B 134, Ground Floor, Pusat Komersil Semambu, 25350 Kuantan',
+      balance: 45.65,
+      pin: '123456',
+    );
+
+    final totalAmount = _subtotal;
+    final originalAmount = _originalTotal;
+    final savings = _savings;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          selectedItems: selectedItems,
+          totalAmount: totalAmount,
+          originalAmount: originalAmount,
+          savings: savings,
+          user: user,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,6 +140,7 @@ class _CartScreenState extends State<CartScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
+        title: const Text('Shopping Cart'),
       ),
       body: Column(
         children: [
@@ -179,9 +231,27 @@ class _CartScreenState extends State<CartScreen> {
                       Checkbox(value: _allSelected, onChanged: _toggleSelectAll),
                       const Text('Select all'),
                       const Spacer(),
-                      Text(
-                        'Subtotal : RM${_subtotal.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (_savings > 0)
+                            Text(
+                              'Original: RM${_originalTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                decoration: TextDecoration.lineThrough,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          Text(
+                            'Total: RM${_subtotal.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -190,10 +260,9 @@ class _CartScreenState extends State<CartScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _items.any((i) => i.selected)
-                          ? () => widget.onProceedToPayment
-                          ?.call(_items.where((i) => i.selected).toList())
+                          ? _proceedToPayment
                           : null,
-                      child: const Text('Proceed Payment'),
+                      child: const Text('Proceed to Checkout'),
                     ),
                   ),
                 ],

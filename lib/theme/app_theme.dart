@@ -1,14 +1,11 @@
+// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
-/// Colors pulled from the low-fidelity Figma (soft lilac backgrounds,
-/// near-black CTA buttons, muted grey placeholders). Swap these out once
-/// final brand colors are confirmed — every screen/widget in this package
-/// reads from here rather than hardcoding hex values.
 class AppColors {
   static const background = Color(0xFFFAF7FC);
   static const surface = Colors.white;
-  static const primaryDark = Color(0xFF2B2A2E); // buttons e.g. "Login", "Submit"
-  static const lilac = Color(0xFFE7E1F5); // bottom nav / pill backgrounds
+  static const primaryDark = Color(0xFF2B2A2E);
+  static const lilac = Color(0xFFE7E1F5);
   static const lilacSelected = Color(0xFFC9BEEA);
   static const placeholder = Color(0xFFE4E0EC);
   static const placeholderIcon = Color(0xFFB3ACC2);
@@ -17,6 +14,16 @@ class AppColors {
   static const success = Color(0xFF3A8F4A);
   static const divider = Color(0xFFEAE6F0);
   static const danger = Color(0xFFD64545);
+
+  static const primary = Color(0xFFEE4D2D);
+  static const primaryLight = Color(0xFFFF6B4A);
+  static const primaryBackground = Color(0xFFFFF0ED);
+  static const warning = Color(0xFFFFA726);
+  static const info = Color(0xFF2196F3);
+  static const grey100 = Color(0xFFF5F5F5);
+  static const grey300 = Color(0xFFE0E0E0);
+  static const grey600 = Color(0xFF757575);
+  static const grey900 = Color(0xFF212121);
 }
 
 class AppTheme {
@@ -26,8 +33,10 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryDark,
-        primary: AppColors.primaryDark,
+        primary: AppColors.primary,
         surface: AppColors.background,
+        error: AppColors.danger,
+        // Remove the 'success' parameter - it doesn't exist in fromSeed()
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,
@@ -37,10 +46,10 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryDark,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

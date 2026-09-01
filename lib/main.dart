@@ -1,7 +1,9 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'models/cart_item.dart';
 import 'models/product.dart';
 import 'models/review.dart';
+import 'models/user.dart';
 import 'screens/cart_screen.dart';
 import 'screens/category_list_screen.dart';
 import 'screens/favorites_screen.dart';
@@ -11,10 +13,7 @@ import 'state/product_store.dart';
 
 void main() {
   ProductStore.instance.setProducts(_sampleProducts);
-
-  // 1. Start with an empty cart
   ProductStore.instance.updateCart([]);
-
   runApp(const ProductDemoApp());
 }
 
@@ -63,6 +62,15 @@ final List<Review> _sampleReviews = [
   ),
 ];
 
+// Default user for the app
+final User defaultUser = User(
+  name: 'Lee Jia Cheng',
+  phone: '(+60) 11-7281 2642',
+  address: 'B 134, Ground Floor, Pusat Komersil Semambu, 25350 Kuantan',
+  balance: 45.65,
+  pin: '123456',
+);
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -89,14 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       CartScreen(
         items: ProductStore.instance.cartItems,
+        user: defaultUser,
         onCartUpdated: (updatedItems) {
           ProductStore.instance.updateCart(updatedItems);
-        },
-        onProceedToPayment: (items) {
-          debugPrint('Proceeding with ${items.length} item(s)');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Would hand off to Payment here')),
-          );
         },
       ),
     );
