@@ -6,9 +6,6 @@ import 'price_tag.dart';
 import 'product_image.dart';
 import 'rating_stars.dart';
 
-/// The horizontal "Item N" row: thumbnail, name, description, price on the
-/// left; rating + favorite heart on the right. Reused by the category list,
-/// cart, and favorites screens (each just toggles [showCheckbox] on/off).
 class ProductListTile extends StatelessWidget {
   final Product product;
   final VoidCallback? onTap;
@@ -34,56 +31,70 @@ class ProductListTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showCheckbox)
-              Checkbox(value: checked, onChanged: onCheckedChanged),
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: Checkbox(
+                  value: checked,
+                  onChanged: onCheckedChanged,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
             ProductImage(
               imageUrl: product.imageUrl,
               assetPath: product.imageAsset,
-              width: 72,
-              height: 72,
+              width: 56,
+              height: 56,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            // Text Column with FittedBoxes to scale down long content automatically
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: RatingStars(rating: product.rating),
                   ),
                   if (showDescription && product.description.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       product.description,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                   const SizedBox(height: 4),
-                  PriceTag(price: product.price, promoPrice: product.promoPrice,),
+                  // Forces PriceTag to shrink if promo price text is too long
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: PriceTag(price: product.price, promoPrice: product.promoPrice),
+                  ),
+                  if (onFavoriteChanged != null) ...[
+                    const SizedBox(height: 4),
+                    FavoriteButton(
+                      isFavorite: product.isFavorite,
+                      onChanged: onFavoriteChanged!,
+                    ),
+                  ],
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                RatingStars(rating: product.rating),
-                const SizedBox(height: 8),
-                if (onFavoriteChanged != null)
-                  FavoriteButton(
-                    isFavorite: product.isFavorite,
-                    onChanged: onFavoriteChanged!,
-                  ),
-              ],
             ),
           ],
         ),

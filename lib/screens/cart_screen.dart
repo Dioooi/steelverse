@@ -4,7 +4,6 @@ import '../models/cart_item.dart';
 import '../models/user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/product_list_tile.dart';
-import '../state/product_store.dart';
 import '/screens/payment_screen.dart';
 
 /// Corresponds to the "Cart" screen: per-item checkbox, favorite heart,
@@ -118,18 +117,22 @@ class _CartScreenState extends State<CartScreen> {
     final originalAmount = _originalTotal;
     final savings = _savings;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PaymentScreen(
-          selectedItems: selectedItems,
-          totalAmount: totalAmount,
-          originalAmount: originalAmount,
-          savings: savings,
-          user: user,
+    if (widget.onProceedToPayment != null) {
+      widget.onProceedToPayment!(selectedItems);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentScreen(
+            selectedItems: selectedItems,
+            totalAmount: totalAmount,
+            originalAmount: originalAmount,
+            savings: savings,
+            user: user,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
@@ -143,24 +146,29 @@ class _CartScreenState extends State<CartScreen> {
         title: const Text('Shopping Cart'),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                Text('Cart', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              ],
+            child: Text(
+              'Cart',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
+          const SizedBox(height: 8),
           Expanded(
             child: _items.isEmpty
                 ? const Center(
-              child: Text('Your cart is empty', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text(
+                'Your cart is empty',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             )
                 : ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _items.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.divider),
+              separatorBuilder: (_, __) =>
+              const Divider(height: 1, color: AppColors.divider),
               itemBuilder: (context, i) {
                 final item = _items[i];
                 return Dismissible(
@@ -173,48 +181,88 @@ class _CartScreenState extends State<CartScreen> {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (_) => _removeItem(i),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ProductListTile(
-                          product: item.product,
-                          showCheckbox: true,
-                          checked: item.selected,
-                          onCheckedChanged: (v) {
-                            setState(() => item.selected = v ?? false);
-                            _notifyParent();
-                          },
-                          onFavoriteChanged: (fav) {
-                            setState(() {
-                              _items[i] = CartItem(
-                                product: item.product.copyWith(isFavorite: fav),
-                                quantity: item.quantity,
-                                selected: item.selected,
-                              );
-                            });
-                            widget.onFavoriteToggle?.call(item, fav);
-                            _notifyParent();
-                          },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Give product tile maximum proportional space
+                        Expanded(
+                          flex: 3,
+                          child: ProductListTile(
+                            product: item.product,
+                            showCheckbox: true,
+                            checked: item.selected,
+                            showDescription: false,
+                            onCheckedChanged: (v) {
+                              setState(() => item.selected = v ?? false);
+                              _notifyParent();
+                            },
+                            onFavoriteChanged: (fav) {
+                              setState(() {
+                                _items[i] = CartItem(
+                                  product: item.product
+                                      .copyWith(isFavorite: fav),
+                                  quantity: item.quantity,
+                                  selected: item.selected,
+                                );
+                              });
+                              widget.onFavoriteToggle?.call(item, fav);
+                              _notifyParent();
+                            },
+                          ),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, size: 20),
-                            onPressed: () => _updateQuantity(i, item.quantity - 1),
+                        const SizedBox(width: 4),
+                        // Prevent quantity action controls from overflowing right side
+                        Flexible(
+                          flex: 2,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                      size: 18),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _updateQuantity(
+                                      i, item.quantity - 1),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4),
+                                  child: Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                      Icons.add_circle_outline,
+                                      size: 18),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _updateQuantity(
+                                      i, item.quantity + 1),
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline,
+                                      color: Colors.red, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => _removeItem(i),
+                                ),
+                              ],
+                            ),
                           ),
-                          Text('${item.quantity}'),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline, size: 20),
-                            onPressed: () => _updateQuantity(i, item.quantity + 1),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () => _removeItem(i),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -228,7 +276,10 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   Row(
                     children: [
-                      Checkbox(value: _allSelected, onChanged: _toggleSelectAll),
+                      Checkbox(
+                        value: _allSelected,
+                        onChanged: _toggleSelectAll,
+                      ),
                       const Text('Select all'),
                       const Spacer(),
                       Column(
