@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/review.dart';
 import '../state/product_store.dart';
-import '../theme/app_theme.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/price_tag.dart';
 import '../widgets/product_image.dart';
 import '../widgets/rating_stars.dart';
 
-/// Corresponds to the "Item X" screen: main image + thumbnail strip with
-/// "Show all", description block, reviews list, dynamic search bar in app bar,
-/// and a bottom action bar (favorite / Add to Cart / Buy now).
 class ItemDetailScreen extends StatefulWidget {
   final Product product;
   final List<Review> reviews;
@@ -99,7 +95,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ? product.galleryImageUrls
         : [product.imageUrl ?? ''];
 
-    // Filter products dynamically from store
     final allProducts = ProductStore.instance.products;
     final searchResults = _searchQuery.isEmpty
         ? <Product>[]
@@ -110,16 +105,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         .toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: SizedBox(
           height: 40,
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(fontSize: 14),
+            style: const TextStyle(fontSize: 14, color: Colors.white),
             onChanged: (val) {
               setState(() {
                 _searchQuery = val.trim();
@@ -127,11 +125,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             },
             decoration: InputDecoration(
               hintText: 'Search items...',
-              hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-              prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+              hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+              prefixIcon: const Icon(Icons.search, size: 20, color: Colors.white54),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.clear, size: 18),
+                icon: const Icon(Icons.clear, size: 18, color: Colors.white54),
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
@@ -142,11 +140,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   : null,
               contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: AppColors.divider),
+                borderSide: const BorderSide(color: Colors.white24),
                 borderRadius: BorderRadius.circular(20),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                borderSide: const BorderSide(color: Colors.orangeAccent),
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -154,11 +152,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined),
+            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
             onPressed: widget.onCartTap,
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {},
           ),
         ],
@@ -172,25 +170,33 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 Text(
                   product.name,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 const SizedBox(height: 12),
 
-                // Main image + vertical thumbnail rail.
+                // Main Image & Thumbnails Rail
                 SizedBox(
                   height: 260,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: ProductImage(
-                          imageUrl: gallery[_selectedImageIndex].isEmpty
-                              ? null
-                              : gallery[_selectedImageIndex],
-                          assetPath: product.imageAsset,
-                          width: double.infinity,
-                          height: 260,
-                          placeholderIcon: Icons.image_outlined,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: ProductImage(
+                              imageUrl: gallery[_selectedImageIndex].isEmpty ? null : gallery[_selectedImageIndex],
+                              assetPath: product.imageAsset,
+                              width: double.infinity,
+                              height: 260,
+                              placeholderIcon: Icons.image_outlined,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -200,15 +206,28 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           itemCount: gallery.length,
                           separatorBuilder: (_, __) => const SizedBox(height: 8),
                           itemBuilder: (context, i) {
+                            final isSelected = i == _selectedImageIndex;
                             return GestureDetector(
                               onTap: () => setState(() => _selectedImageIndex = i),
-                              child: Opacity(
-                                opacity: i == _selectedImageIndex ? 1 : 0.6,
-                                child: ProductImage(
-                                  imageUrl: gallery[i].isEmpty ? null : gallery[i],
-                                  width: 60,
-                                  height: 60,
-                                  placeholderIcon: Icons.image_outlined,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected ? Colors.orangeAccent : Colors.white12,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Opacity(
+                                    opacity: isSelected ? 1.0 : 0.6,
+                                    child: ProductImage(
+                                      imageUrl: gallery[i].isEmpty ? null : gallery[i],
+                                      width: 60,
+                                      height: 60,
+                                      placeholderIcon: Icons.image_outlined,
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -222,14 +241,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: widget.onShowAllImages,
-                    child: const Text('Show all'),
+                    child: const Text('Show all', style: TextStyle(color: Colors.orangeAccent)),
                   ),
                 ),
                 const SizedBox(height: 8),
                 PriceTag(
                   price: product.price,
                   promoPrice: product.promoPrice,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.orangeAccent),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -238,40 +257,68 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '(${product.reviewCount} reviews)',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
 
-                const Text(
-                  'Description:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Description Box
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Description:',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        product.description.isNotEmpty ? product.description : 'No description provided yet.',
+                        style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.white70),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  product.description.isNotEmpty
-                      ? product.description
-                      : 'No description provided yet.',
-                  style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                const Text(
-                  'Review:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Reviews Box
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Reviews:',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      if (widget.reviews.isEmpty)
+                        const Text('No reviews yet.', style: TextStyle(color: Colors.white54))
+                      else
+                        ...widget.reviews.map((r) => _ReviewTile(review: r)),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                if (widget.reviews.isEmpty)
-                  const Text('No reviews yet.', style: TextStyle(color: AppColors.textSecondary))
-                else
-                  ...widget.reviews.map((r) => _ReviewTile(review: r)),
                 const SizedBox(height: 100),
               ],
             ),
           ),
 
-          // Search Results Dropdown Overlay
+          // Search Results Overlay
           if (_searchQuery.isNotEmpty)
             Positioned(
               top: 0,
@@ -279,38 +326,39 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               right: 16,
               child: Material(
                 elevation: 6,
+                color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 250),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider),
+                    border: Border.all(color: Colors.white12),
                   ),
                   child: searchResults.isEmpty
                       ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
                       'No matching products found.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: Colors.white54),
                     ),
                   )
                       : ListView.separated(
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     itemCount: searchResults.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
                     itemBuilder: (context, index) {
                       final p = searchResults[index];
                       return ListTile(
-                        leading: const Icon(Icons.build),
+                        leading: const Icon(Icons.build, color: Colors.orangeAccent),
                         title: Text(
                           p.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         subtitle: Text(
                           '\$${p.price.toStringAsFixed(2)} - ${p.category}',
-                          style: const TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(color: Colors.white54),
                         ),
                         onTap: () => _navigateToProduct(p),
                       );
@@ -322,14 +370,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ],
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E1E1E),
+            border: Border(top: BorderSide(color: Colors.white12)),
+          ),
           child: Row(
             children: [
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.divider),
+                  border: Border.all(color: Colors.white24),
                   borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
                 padding: const EdgeInsets.all(8),
                 child: FavoriteButton(
@@ -343,23 +396,32 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
                   onPressed: widget.onAddToCart,
-                  icon: const Icon(Icons.shopping_cart_outlined),
+                  icon: const Icon(Icons.shopping_cart_outlined, size: 18),
                   label: const Text('Add to Cart'),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
                   onPressed: () {
-                    // Add product to cart store first
                     widget.onAddToCart?.call();
-                    // Invoke external onBuyNow callback if provided
                     widget.onBuyNow?.call();
-                    // Navigate directly to cart page
                     widget.onCartTap?.call();
                   },
-                  child: const Text('Buy now!'),
+                  child: const Text('Buy now!', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -377,7 +439,7 @@ class _ReviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -386,12 +448,12 @@ class _ReviewTile extends StatelessWidget {
           Text(
             '(${review.date.day.toString().padLeft(2, '0')} '
                 '${_month(review.date.month)} ${review.date.year})',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: 12, color: Colors.white54),
           ),
           const SizedBox(height: 4),
-          Text(review.reviewerName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(review.reviewerName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
           const SizedBox(height: 2),
-          Text(review.comment, style: const TextStyle(fontSize: 13)),
+          Text(review.comment, style: const TextStyle(fontSize: 13, color: Colors.white70)),
         ],
       ),
     );

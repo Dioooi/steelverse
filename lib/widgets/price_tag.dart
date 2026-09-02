@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Matches the Figma "Price : $$" / "Price : $$$ $$" pattern:
-/// - No promo -> "Price : RM20.00"
-/// - Promo    -> original struck through in grey, promo price in green.
+/// Renders product pricing with optional promo discounts and labels.
 ///
-/// Currency symbol/format lives in one place ([_format]) so it's easy to
-/// localize later (e.g. swap 'RM' for a locale-aware NumberFormat).
+/// Example:
+/// - No promo: "Price : RM20.00"
+/// - Promo:    "Price : " ~RM25.00~  "RM20.00"
 class PriceTag extends StatelessWidget {
   final double price;
   final double? promoPrice;
   final TextStyle? style;
   final bool showLabel;
+  final String currencySymbol;
 
   const PriceTag({
     super.key,
@@ -19,37 +19,59 @@ class PriceTag extends StatelessWidget {
     this.promoPrice,
     this.style,
     this.showLabel = true,
+    this.currencySymbol = 'RM',
   });
 
-  String _format(double v) => 'RM${v.toStringAsFixed(2)}';
+  String _format(double amount) => '$currencySymbol${amount.toStringAsFixed(2)}';
 
   @override
   Widget build(BuildContext context) {
-    final base = style ?? const TextStyle(fontSize: 13, color: AppColors.textPrimary);
-    final label = showLabel ? 'Price : ' : '';
-    final hasPromo = promoPrice != null && promoPrice! < price;
+    // Inherits base text style from theme context if not provided
+    final TextStyle baseStyle = style ??
+        Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Colors.white,
+        ) ??
+        const TextStyle(fontSize: 13, color: Colors.white);
 
+    final bool hasPromo = promoPrice != null && promoPrice! < price;
+
+    // Fast path: Single Text widget for standard pricing
     if (!hasPromo) {
-      return Text('$label${_format(price)}', style: base);
+      final String label = showLabel ? 'Price : ' : '';
+      return Text(
+        '$label${_format(price)}',
+        style: baseStyle,
+      );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (label.isNotEmpty) Text(label, style: base),
-        Text(
-          _format(price),
-          style: base.copyWith(
-            decoration: TextDecoration.lineThrough,
-            color: AppColors.textSecondary,
+    // Single RichText pipeline for promo pricing
+    return Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: [
+          if (showLabel)
+            const TextSpan(text: 'Price : '),
+          TextSpan(
+            text: _format(price),
+            style: TextStyle(
+              decoration: TextDecoration.lineThrough,
+              decorationColor: Colors.white38,
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          _format(promoPrice!),
-          style: base.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),
-        ),
-      ],
+          const TextSpan(text: '  '), // Replaces SizedBox spacing
+          TextSpan(
+            text: _format(promoPrice!),
+            style: TextStyle(
+              color: AppColors.success,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      semanticsLabel: showLabel
+          ? 'Original price ${_format(price)}, discounted price ${_format(promoPrice!)}'
+          : null,
     );
   }
 }

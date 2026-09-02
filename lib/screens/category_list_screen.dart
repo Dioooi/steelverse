@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/product_banner_header.dart';
 import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
 
-/// Corresponds to the "Category 1" screens in the Figma — both the plain
-/// listing and the filter states (Name sort, Price sort, Promotion filter).
 class CategoryListScreen extends StatefulWidget {
   final String categoryTitle;
   final String? categorySubtitle;
@@ -41,20 +38,16 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   late String _selectedFilter;
   bool _loadingMore = false;
 
-  // Sorting state flags
-  bool _nameAscending = true;  // true: A-Z, false: Z-A
-  bool _priceAscending = true; // true: Low-High, false: High-Low
+  bool _nameAscending = true;
+  bool _priceAscending = true;
 
   @override
   void initState() {
     super.initState();
     _products = List.of(widget.products);
-    _selectedFilter = widget.filters.isNotEmpty
-        ? _getFilterLabel(widget.filters.first)
-        : '';
+    _selectedFilter = widget.filters.isNotEmpty ? _getFilterLabel(widget.filters.first) : '';
   }
 
-  /// Maps 'filter 1', 'filter 2', or existing dynamic labels to current display text
   String _getFilterLabel(String rawFilter) {
     final lower = rawFilter.toLowerCase();
     if (lower == 'filter 1' || lower.startsWith('name:')) {
@@ -69,19 +62,15 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   List<Product> get _visibleProducts {
     List<Product> list = List.of(_products);
 
-    // Filter by promotion state
     if (_selectedFilter.toLowerCase() == 'promotion') {
       return list.where((p) => p.hasPromo).toList();
     }
 
-    // Sort by Name (Filter 1)
     if (_selectedFilter.startsWith('Name:')) {
       list.sort((a, b) => _nameAscending
           ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
           : b.name.toLowerCase().compareTo(a.name.toLowerCase()));
-    }
-    // Sort by Price (Filter 2)
-    else if (_selectedFilter.startsWith('Price:')) {
+    } else if (_selectedFilter.startsWith('Price:')) {
       list.sort((a, b) {
         final priceA = (a.hasPromo && a.promoPrice != null) ? a.promoPrice! : a.price;
         final priceB = (b.hasPromo && b.promoPrice != null) ? b.promoPrice! : b.price;
@@ -94,22 +83,17 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   void _handleFilterTap(String selectedLabel) {
     setState(() {
-      // Handle Filter 1 (Name)
       if (selectedLabel.startsWith('Name:') || selectedLabel == 'filter 1') {
         if (_selectedFilter.startsWith('Name:')) {
-          _nameAscending = !_nameAscending; // Toggle A-Z / Z-A on re-tap
+          _nameAscending = !_nameAscending;
         }
         _selectedFilter = _getFilterLabel('filter 1');
-      }
-      // Handle Filter 2 (Price)
-      else if (selectedLabel.startsWith('Price:') || selectedLabel == 'filter 2') {
+      } else if (selectedLabel.startsWith('Price:') || selectedLabel == 'filter 2') {
         if (_selectedFilter.startsWith('Price:')) {
-          _priceAscending = !_priceAscending; // Toggle Low-High / High-Low on re-tap
+          _priceAscending = !_priceAscending;
         }
         _selectedFilter = _getFilterLabel('filter 2');
-      }
-      // Handle other chips (e.g. 'Promotion')
-      else {
+      } else {
         _selectedFilter = selectedLabel;
       }
     });
@@ -134,6 +118,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     final displayFilters = widget.filters.map((f) => _getFilterLabel(f)).toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         top: false,
         child: CustomScrollView(
@@ -178,7 +163,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                           },
                         ),
                         if (i != visible.length - 1)
-                          const Divider(height: 1, color: AppColors.divider),
+                          const Divider(height: 1, color: Colors.white12),
                       ],
                     );
                   },
@@ -190,21 +175,40 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orangeAccent,
+                    side: const BorderSide(color: Colors.orangeAccent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  ),
                   onPressed: widget.onLoadMore == null ? null : _handleLoadMore,
                   child: _loadingMore
                       ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orangeAccent),
                   )
-                      : const Text('View More Product'),
+                      : const Text('View More Products'),
                 ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 1, onTap: (_) {}),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 1, // Category list active tab
+        onTap: (index) {
+          if (index == 0) {
+            // Index 0 represents the Home screen
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          } else if (index == 2) {
+            // Index 2 represents Favorites (if applicable)
+            // Add navigation to FavoritesScreen here if needed
+          } else if (index == 3) {
+            // Index 3 represents Profile (if applicable)
+            // Add navigation to ProfileScreen here if needed
+          }
+        },
+      ),
     );
   }
 }

@@ -67,7 +67,7 @@ class ProductListTile extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 4),
-                  PriceTag(price: product.price, promoPrice: product.promoPrice),
+                  PriceTag(price: product.price, promoPrice: product.promoPrice,),
                 ],
               ),
             ),
