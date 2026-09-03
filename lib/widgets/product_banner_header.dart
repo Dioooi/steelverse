@@ -32,7 +32,9 @@ class ProductBannerHeader extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Background — swap for ProductImage(imageUrl: bannerImageUrl)
-          // fit: BoxFit.cover once real banner art is ready.
+          // fit: BoxFit.cover once you have a real hardware-store photo.
+          // Until then, this renders a dark industrial gradient with a
+          // subtle tool-icon texture instead of a plain flat color.
           bannerImageUrl != null
               ? ProductImage(
             imageUrl: bannerImageUrl,
@@ -43,10 +45,29 @@ class ProductBannerHeader extends StatelessWidget {
               : Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF8B8792), Color(0xFFEDEAF2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.grey900, AppColors.primaryDark],
               ),
+            ),
+            child: Stack(
+              children: const [
+                Positioned(
+                  top: -10,
+                  right: -10,
+                  child: Icon(Icons.construction, size: 110, color: Colors.white10),
+                ),
+                Positioned(
+                  bottom: 30,
+                  right: 60,
+                  child: Icon(Icons.hardware_rounded, size: 70, color: Colors.white10),
+                ),
+                Positioned(
+                  top: 40,
+                  left: 140,
+                  child: Icon(Icons.build_circle_outlined, size: 50, color: Colors.white10),
+                ),
+              ],
             ),
           ),
           // Gradient overlay so title text stays legible over any photo.
@@ -55,7 +76,7 @@ class ProductBannerHeader extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.black26, Colors.transparent, Colors.black45],
+                colors: [Colors.black38, Colors.black26, Colors.black87],
               ),
             ),
           ),

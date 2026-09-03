@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.75),
+              color: Colors.black.withValues(alpha: 0.75),
             ),
           ),
           // Main Content
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                                   : null,
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.12),
+                              fillColor: Colors.white.withValues(alpha: 0.12),
                               contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(20),
@@ -274,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: Border.all(color: Colors.white24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         )
@@ -606,7 +606,7 @@ class _MenuTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white24),
         ),
@@ -615,7 +615,7 @@ class _MenuTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: color.withOpacity(0.2),
+              backgroundColor: color.withValues(alpha: 0.2),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
@@ -665,7 +665,7 @@ class _HorizontalProductCard extends StatelessWidget {
       width: 150,
       margin: const EdgeInsets.only(right: 12),
       child: Card(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           onTap: onTap,
@@ -731,7 +731,7 @@ class _GridProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.white.withOpacity(0.1),
+      color: Colors.white.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
@@ -745,7 +745,7 @@ class _GridProductCard extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.build_rounded, color: Colors.white70, size: 40),

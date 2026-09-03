@@ -29,9 +29,9 @@ class PriceTag extends StatelessWidget {
     // Inherits base text style from theme context if not provided
     final TextStyle baseStyle = style ??
         Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Colors.white,
+          color: AppColors.textPrimary,
         ) ??
-        const TextStyle(fontSize: 13, color: Colors.white);
+        const TextStyle(fontSize: 13, color: AppColors.textPrimary);
 
     final bool hasPromo = promoPrice != null && promoPrice! < price;
 
@@ -55,7 +55,7 @@ class PriceTag extends StatelessWidget {
             text: _format(price),
             style: TextStyle(
               decoration: TextDecoration.lineThrough,
-              decorationColor: Colors.white38,
+              decorationColor: AppColors.textSecondary,
               color: AppColors.textSecondary,
             ),
           ),

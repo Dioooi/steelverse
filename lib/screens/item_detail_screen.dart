@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/review.dart';
 import '../state/product_store.dart';
+import '../theme/app_theme.dart';
 import '../widgets/favorite_button.dart';
 import '../widgets/price_tag.dart';
 import '../widgets/product_image.dart';
@@ -105,19 +106,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: SizedBox(
           height: 40,
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(fontSize: 14, color: Colors.white),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
             onChanged: (val) {
               setState(() {
                 _searchQuery = val.trim();
@@ -125,11 +126,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             },
             decoration: InputDecoration(
               hintText: 'Search items...',
-              hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
-              prefixIcon: const Icon(Icons.search, size: 20, color: Colors.white54),
+              hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.clear, size: 18, color: Colors.white54),
+                icon: const Icon(Icons.clear, size: 18, color: AppColors.textSecondary),
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
@@ -140,11 +141,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   : null,
               contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.white24),
+                borderSide: const BorderSide(color: AppColors.divider),
                 borderRadius: BorderRadius.circular(20),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.orangeAccent),
+                borderSide: const BorderSide(color: AppColors.primary),
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -152,11 +153,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+            icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
             onPressed: widget.onCartTap,
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             onPressed: () {},
           ),
         ],
@@ -170,7 +171,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 Text(
                   product.name,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 12),
 
@@ -183,9 +184,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white12),
+                            border: Border.all(color: AppColors.divider),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -213,7 +214,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: isSelected ? Colors.orangeAccent : Colors.white12,
+                                    color: isSelected ? AppColors.primary : AppColors.divider,
                                     width: isSelected ? 2 : 1,
                                   ),
                                 ),
@@ -241,14 +242,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: widget.onShowAllImages,
-                    child: const Text('Show all', style: TextStyle(color: Colors.orangeAccent)),
+                    child: const Text('Show all', style: TextStyle(color: AppColors.primary)),
                   ),
                 ),
                 const SizedBox(height: 8),
                 PriceTag(
                   price: product.price,
                   promoPrice: product.promoPrice,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.orangeAccent),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primary),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -257,7 +258,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '(${product.reviewCount} reviews)',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -268,21 +269,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: AppColors.divider),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'Description:',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         product.description.isNotEmpty ? product.description : 'No description provided yet.',
-                        style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.white70),
+                        style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -294,20 +295,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: AppColors.divider),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'Reviews:',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 12),
                       if (widget.reviews.isEmpty)
-                        const Text('No reviews yet.', style: TextStyle(color: Colors.white54))
+                        const Text('No reviews yet.', style: TextStyle(color: AppColors.textSecondary))
                       else
                         ...widget.reviews.map((r) => _ReviewTile(review: r)),
                     ],
@@ -326,39 +327,39 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               right: 16,
               child: Material(
                 elevation: 6,
-                color: const Color(0xFF1E1E1E),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 250),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: AppColors.divider),
                   ),
                   child: searchResults.isEmpty
                       ? const Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
                       'No matching products found.',
-                      style: TextStyle(color: Colors.white54),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                   )
                       : ListView.separated(
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     itemCount: searchResults.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.divider),
                     itemBuilder: (context, index) {
                       final p = searchResults[index];
                       return ListTile(
-                        leading: const Icon(Icons.build, color: Colors.orangeAccent),
+                        leading: const Icon(Icons.build, color: AppColors.primary),
                         title: Text(
                           p.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                         ),
                         subtitle: Text(
                           '\$${p.price.toStringAsFixed(2)} - ${p.category}',
-                          style: const TextStyle(color: Colors.white54),
+                          style: const TextStyle(color: AppColors.textSecondary),
                         ),
                         onTap: () => _navigateToProduct(p),
                       );
@@ -373,16 +374,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E1E1E),
-            border: Border(top: BorderSide(color: Colors.white12)),
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.divider)),
           ),
           child: Row(
             children: [
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: AppColors.divider),
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: AppColors.surface,
                 ),
                 padding: const EdgeInsets.all(8),
                 child: FavoriteButton(
@@ -397,8 +398,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white38),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.divider),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
@@ -411,8 +412,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    foregroundColor: Colors.black,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
@@ -448,12 +449,12 @@ class _ReviewTile extends StatelessWidget {
           Text(
             '(${review.date.day.toString().padLeft(2, '0')} '
                 '${_month(review.date.month)} ${review.date.year})',
-            style: const TextStyle(fontSize: 12, color: Colors.white54),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 4),
-          Text(review.reviewerName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white)),
+          Text(review.reviewerName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
           const SizedBox(height: 2),
-          Text(review.comment, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+          Text(review.comment, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
         ],
       ),
     );

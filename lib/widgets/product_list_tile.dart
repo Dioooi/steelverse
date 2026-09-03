@@ -33,7 +33,7 @@ class ProductListTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (showCheckbox)
               SizedBox(
@@ -60,7 +60,11 @@ class ProductListTile extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -86,16 +90,16 @@ class ProductListTile extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: PriceTag(price: product.price, promoPrice: product.promoPrice),
                   ),
-                  if (onFavoriteChanged != null) ...[
-                    const SizedBox(height: 4),
-                    FavoriteButton(
-                      isFavorite: product.isFavorite,
-                      onChanged: onFavoriteChanged!,
-                    ),
-                  ],
                 ],
               ),
             ),
+            if (onFavoriteChanged != null) ...[
+              const SizedBox(width: 8),
+              FavoriteButton(
+                isFavorite: product.isFavorite,
+                onChanged: onFavoriteChanged!,
+              ),
+            ],
           ],
         ),
       ),

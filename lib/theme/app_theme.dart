@@ -23,6 +23,16 @@ class AppColors {
   static const grey100 = Color(0xFFF5F5F5);
   static const grey300 = Color(0xFFE0E0E0);
   static const grey600 = Color(0xFF757575);
+
+  // Dark-grey "industrial" palette — used for screens that want a darker,
+  // hardware-store feel (e.g. Browse/Category) while product cards
+  // themselves stay on the light `surface` color for readability.
+  static const darkBackground = Color(0xFF1C1C1E);
+  static const darkSurface = Color(0xFF2C2C2E);
+  static const darkSurfaceAlt = Color(0xFF3A3A3C);
+  static const darkDivider = Color(0xFF48484A);
+  static const darkTextPrimary = Color(0xFFF2F2F2);
+  static const darkTextSecondary = Color(0xFFA8A8AD);
   static const grey900 = Color(0xFF212121);
 }
 

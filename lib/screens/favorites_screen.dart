@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../state/product_store.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/product_banner_header.dart';
 import '../widgets/product_list_tile.dart';
+import 'category_list_screen.dart';
+import 'profile_page.dart';
+import '../main.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final List<Product> favorites;
   final String? bannerImageUrl;
   final void Function(Product product)? onProductTap;
   final void Function(Product product)? onRemoveFavorite;
+  final String username;
 
   const FavoritesScreen({
     super.key,
@@ -15,6 +22,7 @@ class FavoritesScreen extends StatefulWidget {
     this.bannerImageUrl,
     this.onProductTap,
     this.onRemoveFavorite,
+    this.username = 'Guest',
   });
 
   @override
@@ -33,7 +41,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         top: false,
         child: CustomScrollView(
@@ -52,17 +60,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent.withValues(alpha: 0.15),
+                    color: AppColors.primaryBackground,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.4)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                   ),
                   alignment: Alignment.center,
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.favorite_rounded, color: Colors.orangeAccent, size: 20),
+                      Icon(Icons.favorite_rounded, color: AppColors.primary, size: 20),
                       SizedBox(width: 8),
-                      Text('Favorite Items', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.orangeAccent)),
+                      Text('Favorite Items', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary)),
                     ],
                   ),
                 ),
@@ -75,7 +83,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
                   child: Center(
-                    child: Text('No favorites yet', style: TextStyle(color: Colors.white54)),
+                    child: Text('No favorites yet', style: TextStyle(color: AppColors.textSecondary)),
                   ),
                 ),
               )
@@ -87,15 +95,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
+                          border: Border.all(color: AppColors.divider),
                         ),
                         child: ProductListTile(
                           product: product,
                           onTap: () => widget.onProductTap?.call(product),
                           onFavoriteChanged: (fav) {
                             if (!fav) {
+                              // Persist to the store first -- this is the part
+                              // that was missing. Without it, the item only
+                              // disappeared from this screen's local list and
+                              // came right back the next time Favorites was
+                              // opened, because ProductStore still thought
+                              // isFavorite was true.
+                              ProductStore.instance.toggleFavorite(product.id, false);
                               setState(() => _favorites.removeAt(i));
                               widget.onRemoveFavorite?.call(product);
                             }
@@ -113,8 +128,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 padding: const EdgeInsets.all(16),
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white38),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.divider),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
@@ -125,6 +140,41 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 2, // Favorites tab is active on this screen
+        onTap: (index) {
+          switch (index) {
+            case 0: // Home
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
+                    (route) => false,
+              );
+              break;
+            case 1: // Browse
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CategoryListScreen(
+                    categoryTitle: 'Hardware Parts',
+                    categorySubtitle: 'Full Inventory',
+                    products: ProductStore.instance.products,
+                    onProductTap: widget.onProductTap,
+                    username: widget.username,
+                  ),
+                ),
+              );
+              break;
+            case 2: // Favorites — already here, nothing to do
+              break;
+            case 3: // Profile
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ProfilePage(username: widget.username)),
+              );
+              break;
+          }
+        },
       ),
     );
   }

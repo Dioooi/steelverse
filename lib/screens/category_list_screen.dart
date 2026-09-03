@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../state/product_store.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/product_banner_header.dart';
 import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
+import 'favorites_screen.dart';
+import 'profile_page.dart';
+// HomeScreen currently lives in main.dart -- adjust this path if you later
+// move it into its own file (e.g. 'home_screen.dart').
+import '../main.dart';
 
 class CategoryListScreen extends StatefulWidget {
   final String categoryTitle;
@@ -16,10 +23,19 @@ class CategoryListScreen extends StatefulWidget {
   final void Function(Product product)? onProductTap;
   final void Function(Product product, bool isFavorite)? onFavoriteToggle;
 
+  /// Used for the Profile tab if this screen owns its own bottom nav
+  /// (no parent shell). Ignored if [onNavTap] is provided.
+  final String username;
+
+  /// If your app has a shared bottom-nav shell (e.g. an IndexedStack),
+  /// pass a callback here and it takes over tab switching entirely.
+  /// If null, this screen navigates on its own via Navigator.push.
+  final void Function(int index)? onNavTap;
+
   const CategoryListScreen({
     super.key,
     required this.categoryTitle,
-    this.categorySubtitle,
+    this.categorySubtitle = 'Everything you need, built to last.',
     this.bannerImageUrl,
     this.filters = const ['filter 1', 'filter 2', 'Promotion'],
     required this.products,
@@ -27,6 +43,8 @@ class CategoryListScreen extends StatefulWidget {
     this.onFilterChanged,
     this.onProductTap,
     this.onFavoriteToggle,
+    this.username = 'Guest',
+    this.onNavTap,
   });
 
   @override
@@ -37,6 +55,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   late List<Product> _products;
   late String _selectedFilter;
   bool _loadingMore = false;
+  bool _hasMore = true;
+  final ScrollController _scrollController = ScrollController();
 
   bool _nameAscending = true;
   bool _priceAscending = true;
@@ -46,6 +66,25 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     super.initState();
     _products = List.of(widget.products);
     _selectedFilter = widget.filters.isNotEmpty ? _getFilterLabel(widget.filters.first) : '';
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (widget.onLoadMore == null || _loadingMore || !_hasMore) return;
+    // Trigger the next page a little before hitting the true bottom so it
+    // feels seamless instead of a hard stop-then-load.
+    const threshold = 200.0;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - threshold) {
+      _handleLoadMore();
+    }
   }
 
   String _getFilterLabel(String rawFilter) {
@@ -59,8 +98,37 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return rawFilter;
   }
 
+  /// Natural sort: compares embedded numbers numerically instead of
+  /// lexicographically, so "Item 2" sorts before "Item 10". Plain
+  /// String.compareTo produced Item 1, Item 10, Item 2, Item 3... which is
+  /// what looked like "filters not working."
+  int _naturalCompare(String a, String b) {
+    final chunker = RegExp(r'(\d+)|(\D+)');
+    final aParts = chunker.allMatches(a).map((m) => m.group(0)!).toList();
+    final bParts = chunker.allMatches(b).map((m) => m.group(0)!).toList();
+    final len = aParts.length < bParts.length ? aParts.length : bParts.length;
+    for (var i = 0; i < len; i++) {
+      final an = int.tryParse(aParts[i]);
+      final bn = int.tryParse(bParts[i]);
+      final cmp = (an != null && bn != null)
+          ? an.compareTo(bn)
+          : aParts[i].compareTo(bParts[i]);
+      if (cmp != 0) return cmp;
+    }
+    return aParts.length.compareTo(bParts.length);
+  }
+
   List<Product> get _visibleProducts {
-    List<Product> list = List.of(_products);
+    // Always read favorite status from the store, not the locally cached
+    // copy -- this screen's local _products can go stale if the user
+    // favorites/unfavorites the same item from Favorites or Item Detail
+    // and then comes back here without a full rebuild.
+    final storeFavorites = {
+      for (final p in ProductStore.instance.products) p.id: p.isFavorite,
+    };
+    List<Product> list = _products
+        .map((p) => p.copyWith(isFavorite: storeFavorites[p.id] ?? p.isFavorite))
+        .toList();
 
     if (_selectedFilter.toLowerCase() == 'promotion') {
       return list.where((p) => p.hasPromo).toList();
@@ -68,8 +136,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
     if (_selectedFilter.startsWith('Name:')) {
       list.sort((a, b) => _nameAscending
-          ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
-          : b.name.toLowerCase().compareTo(a.name.toLowerCase()));
+          ? _naturalCompare(a.name.toLowerCase(), b.name.toLowerCase())
+          : _naturalCompare(b.name.toLowerCase(), a.name.toLowerCase()));
     } else if (_selectedFilter.startsWith('Price:')) {
       list.sort((a, b) {
         final priceA = (a.hasPromo && a.promoPrice != null) ? a.promoPrice! : a.price;
@@ -102,11 +170,14 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   Future<void> _handleLoadMore() async {
-    if (widget.onLoadMore == null || _loadingMore) return;
+    if (widget.onLoadMore == null || _loadingMore || !_hasMore) return;
     setState(() => _loadingMore = true);
     try {
       final more = await widget.onLoadMore!();
-      setState(() => _products.addAll(more));
+      setState(() {
+        _products.addAll(more);
+        if (more.isEmpty) _hasMore = false;
+      });
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -118,10 +189,11 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     final displayFilters = widget.filters.map((f) => _getFilterLabel(f)).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.darkBackground,
       body: SafeArea(
         top: false,
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(
               child: ProductBannerHeader(
@@ -149,12 +221,30 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 delegate: SliverChildBuilderDelegate(
                       (context, i) {
                     final product = visible[i];
-                    return Column(
-                      children: [
-                        ProductListTile(
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ProductListTile(
                           product: product,
                           onTap: () => widget.onProductTap?.call(product),
                           onFavoriteChanged: (fav) {
+                            // Persist to the single source of truth first --
+                            // this is what was missing. Without it, toggling
+                            // a favorite here never reached ProductStore, so
+                            // Favorites and this screen drifted out of sync.
+                            ProductStore.instance.toggleFavorite(product.id, fav);
                             setState(() {
                               _products[_products.indexOf(product)] =
                                   product.copyWith(isFavorite: fav);
@@ -162,50 +252,84 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                             widget.onFavoriteToggle?.call(product, fav);
                           },
                         ),
-                        if (i != visible.length - 1)
-                          const Divider(height: 1, color: Colors.white12),
-                      ],
+                      ),
                     );
                   },
                   childCount: visible.length,
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orangeAccent,
-                    side: const BorderSide(color: Colors.orangeAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            if (widget.onLoadMore != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: _loadingMore
+                        ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    )
+                        : !_hasMore
+                        ? const Text(
+                      "You've reached the end",
+                      style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                    )
+                        : const SizedBox.shrink(),
                   ),
-                  onPressed: widget.onLoadMore == null ? null : _handleLoadMore,
-                  child: _loadingMore
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orangeAccent),
-                  )
-                      : const Text('View More Products'),
                 ),
               ),
-            ),
           ],
         ),
       ),
       bottomNavigationBar: AppBottomNav(
-        currentIndex: 1, // Category list active tab
+        currentIndex: 1, // Browse/Category tab is active on this screen
         onTap: (index) {
-          if (index == 0) {
-            // Index 0 represents the Home screen
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          } else if (index == 2) {
-            // Index 2 represents Favorites (if applicable)
-            // Add navigation to FavoritesScreen here if needed
-          } else if (index == 3) {
-            // Index 3 represents Profile (if applicable)
-            // Add navigation to ProfileScreen here if needed
+          // If a parent shell owns navigation (e.g. an IndexedStack), let it
+          // handle the tab switch instead of pushing new routes here.
+          if (widget.onNavTap != null) {
+            widget.onNavTap!(index);
+            return;
+          }
+
+          switch (index) {
+            case 0: // Home
+            // popUntil(isFirst) would land on WelcomePage, not HomeScreen,
+            // since HomeScreen is pushed *after* the welcome/login screen.
+            // pushAndRemoveUntil clears the stack and lands on a fresh
+            // HomeScreen instead -- same pattern ProfilePage's logout uses.
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
+                    (route) => false,
+              );
+              break;
+            case 1: // Browse — already here, nothing to do
+              break;
+            case 2: // Favorites
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FavoritesScreen(
+                    favorites: ProductStore.instance.favorites,
+                    bannerImageUrl: widget.bannerImageUrl,
+                    onProductTap: widget.onProductTap,
+                    username: widget.username,
+                  ),
+                ),
+              ).then((_) {
+                // Refresh so any favorites removed on that screen show up
+                // as unfavorited here immediately, not just on next rebuild.
+                if (mounted) setState(() {});
+              });
+              break;
+            case 3: // Profile
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfilePage(username: widget.username),
+                ),
+              );
+              break;
           }
         },
       ),
