@@ -299,7 +299,7 @@ class AdminPage extends StatelessWidget {
                 ),
               ),
 
-              // Product Grid (Smaller Compact Cards)
+              // Responsive Product Grid
               Expanded(
                 child: AnimatedBuilder(
                   animation: ProductStore.instance,
@@ -315,95 +315,113 @@ class AdminPage extends StatelessWidget {
                       );
                     }
 
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: products.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3, // Shows 3 columns instead of 2
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1.0, // Square aspect ratio
-                      ),
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return Card(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Responsive column count based on available screen width
+                        final isMobile = constraints.maxWidth < 600;
+                        final crossAxisCount = isMobile ? 2 : 3;
+
+                        return GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: products.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: isMobile ? 0.85 : 1.0,
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Icon(
-                                      Icons.build_rounded,
-                                      color: Colors.white70,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  product.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  product.category,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white54, fontSize: 10),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          itemBuilder: (context, index) {
+                            final product = products[index];
+                            return Card(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        'RM${product.price.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          color: Colors.orangeAccent,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                                      child: Container(
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.05),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Icon(
+                                          Icons.build_rounded,
+                                          color: Colors.white70,
+                                          size: 28,
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      product.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      product.category,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
                                     Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        IconButton(
-                                          constraints: const BoxConstraints(),
-                                          padding: EdgeInsets.zero,
-                                          icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 16),
-                                          onPressed: () => _showEditProductDialog(context, product),
+                                        Expanded(
+                                          child: Text(
+                                            'RM${product.price.toStringAsFixed(2)}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.orangeAccent,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        IconButton(
-                                          constraints: const BoxConstraints(),
-                                          padding: EdgeInsets.zero,
-                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
-                                          onPressed: () => _confirmDelete(context, product.id, product.name),
+                                        InkWell(
+                                          onTap: () => _showEditProductDialog(context, product),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(2.0),
+                                            child: Icon(
+                                              Icons.edit_outlined,
+                                              color: Colors.blueAccent,
+                                              size: 18,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        InkWell(
+                                          onTap: () => _confirmDelete(context, product.id, product.name),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(2.0),
+                                            child: Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.redAccent,
+                                              size: 18,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );
