@@ -1,16 +1,115 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'register_page.dart';
+import '../screens/admin_page.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
+
+  void _showAdminAuthDialog(BuildContext context) {
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Colors.white24),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.admin_panel_settings, color: Colors.orangeAccent),
+              SizedBox(width: 8),
+              Text('Admin Access', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: usernameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.orangeAccent),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim() != 'admin123') {
+                      return 'Invalid admin username';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.orangeAccent),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value != '123456') {
+                      return 'Invalid password';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(dialogContext).pop(); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminPage()),
+                  );
+                }
+              },
+              child: const Text('Login'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Dark Overlay (matches HomeScreen)
+          // Background Image with Dark Overlay
           Positioned.fill(
             child: Image.asset(
               'assets/pic store.webp',
@@ -20,6 +119,23 @@ class WelcomePage extends StatelessWidget {
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.75),
+            ),
+          ),
+
+          // Top-Left Protected Admin Button
+          Positioned(
+            top: 12,
+            left: 12,
+            child: SafeArea(
+              child: IconButton(
+                icon: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: Colors.orangeAccent,
+                  size: 24,
+                ),
+                tooltip: 'Admin Access',
+                onPressed: () => _showAdminAuthDialog(context),
+              ),
             ),
           ),
 

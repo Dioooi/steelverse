@@ -4,8 +4,6 @@ import '../models/product.dart';
 
 /// A single shared in-memory store so favorite/cart state stays in sync
 /// across every screen, instead of each screen holding its own local copy.
-/// This is a lightweight stand-in for whatever real state management
-/// (Provider/Riverpod/Bloc) or backend syncing the full app ends up using.
 class ProductStore extends ChangeNotifier {
   ProductStore._internal();
   static final ProductStore instance = ProductStore._internal();
@@ -21,6 +19,23 @@ class ProductStore extends ChangeNotifier {
     _products
       ..clear()
       ..addAll(products);
+    notifyListeners();
+  }
+
+  // -------------------------------------------------------------------
+  // Inventory Management Methods (Admin Actions)
+  // -------------------------------------------------------------------
+
+  /// Adds a new product to the catalog.
+  void addProduct(Product product) {
+    _products.add(product);
+    notifyListeners();
+  }
+
+  /// Removes a product from the catalog by ID and removes it from cart/favorites if present.
+  void deleteProduct(String productId) {
+    _products.removeWhere((p) => p.id == productId);
+    _cartItems.removeWhere((i) => i.product.id == productId);
     notifyListeners();
   }
 
@@ -69,5 +84,13 @@ class ProductStore extends ChangeNotifier {
   void clearCart() {
     _cartItems.clear();
     notifyListeners();
+  }
+
+  void updateProduct(Product updatedProduct) {
+    final index = _products.indexWhere((p) => p.id == updatedProduct.id);
+    if (index != -1) {
+      _products[index] = updatedProduct;
+      notifyListeners();
+    }
   }
 }
