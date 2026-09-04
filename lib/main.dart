@@ -12,6 +12,7 @@ import 'theme/app_theme.dart';
 import 'state/product_store.dart';
 import 'login/welcome_page.dart';
 import 'screens/profile_page.dart';
+import 'widgets/app_bottom_nav.dart';
 
 void main() {
   ProductStore.instance.setProducts(_sampleProducts);
@@ -33,21 +34,117 @@ class ProductDemoApp extends StatelessWidget {
   }
 }
 
-final List<Product> _sampleProducts = List.generate(10, (i) {
-  final n = i + 1;
-  final hasPromo = n % 2 == 0;
-  return Product(
-    id: 'item_$n',
-    name: 'Item $n',
-    description: 'Description $n',
-    price: 20.0 + n,
-    promoPrice: hasPromo ? (20.0 + n) * 0.7 : null,
-    rating: 4.0 + (n % 2) * 0.5,
-    reviewCount: 12 + n,
+// Curated hardware + furniture catalog. Only a subset has a matching real
+// photo (imageUrl) for now -- the rest fall back to ProductImage's neutral
+// placeholder rather than risk a mismatched or broken hotlinked photo.
+// Swap in imageUrl/imageAsset per item as real product photography becomes
+// available; nothing else needs to change.
+final List<Product> _sampleProducts = [
+  Product(
+    id: 'item_1',
+    name: 'Claw Hammer 16oz',
+    description: 'Forged steel head, fiberglass handle, reduced vibration.',
+    price: 21.0,
+    rating: 5.0,
+    reviewCount: 34,
     category: 'Hardware Parts',
-    isFavorite: n <= 2,
-  );
-});
+    isFavorite: true,
+    imageUrl: 'https://images.unsplash.com/photo-1542583633-aa0b0e378e2e?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_2',
+    name: 'Cordless Drill Driver',
+    description: '20V lithium-ion, 2-speed, built-in LED work light.',
+    price: 22.0,
+    promoPrice: 15.4,
+    rating: 4.0,
+    reviewCount: 51,
+    category: 'Hardware Parts',
+    isFavorite: true,
+    imageUrl: 'https://images.unsplash.com/photo-1593307315564-c96172dc89dc?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_3',
+    name: 'Adjustable Wrench Set (3-Piece)',
+    description: 'Chrome vanadium steel, fits tight and awkward fittings.',
+    price: 23.0,
+    rating: 5.0,
+    reviewCount: 27,
+    category: 'Hardware Parts',
+    imageUrl: 'https://images.unsplash.com/photo-1650501662347-284973714a68?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_4',
+    name: 'Stainless Steel Screw Assortment (500pc)',
+    description: 'Mixed sizes for wood, metal and drywall projects.',
+    price: 24.0,
+    promoPrice: 16.8,
+    rating: 4.0,
+    reviewCount: 19,
+    category: 'Hardware Parts',
+    imageUrl: 'https://images.unsplash.com/photo-1704732061018-3ac738176c20?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_5',
+    name: 'Heavy-Duty Tool Box, 24"',
+    description: 'Lockable steel tool box with a removable tray.',
+    price: 25.0,
+    rating: 5.0,
+    reviewCount: 22,
+    category: 'Hardware Parts',
+  ),
+  Product(
+    id: 'item_6',
+    name: 'Oak Bookshelf, 5-Tier',
+    description: 'Solid oak bookshelf with a natural wood finish.',
+    price: 26.0,
+    promoPrice: 18.2,
+    rating: 4.0,
+    reviewCount: 15,
+    category: 'Furniture',
+    imageUrl: 'https://images.unsplash.com/photo-1620388639945-990753377b58?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_7',
+    name: 'Ergonomic Office Chair',
+    description: 'Mesh back, adjustable lumbar support and armrests.',
+    price: 27.0,
+    rating: 5.0,
+    reviewCount: 40,
+    category: 'Furniture',
+    imageUrl: 'https://images.unsplash.com/photo-1688578735352-9a6f2ac3b70a?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_8',
+    name: 'Foldable Steel Workbench',
+    description: 'Portable workbench, 300kg load capacity, quick-fold legs.',
+    price: 28.0,
+    promoPrice: 19.6,
+    rating: 4.0,
+    reviewCount: 12,
+    category: 'Hardware Parts',
+  ),
+  Product(
+    id: 'item_9',
+    name: 'Outdoor Rattan Patio Table Set',
+    description: 'Weather-resistant table and 4 chairs for the patio.',
+    price: 29.0,
+    rating: 5.0,
+    reviewCount: 8,
+    category: 'Furniture',
+    imageUrl: 'https://images.unsplash.com/photo-1719324923613-ff0884b031ed?fm=jpg&q=80&w=400&fit=crop&auto=format',
+  ),
+  Product(
+    id: 'item_10',
+    name: 'Rechargeable LED Work Light',
+    description: '3000-lumen work light with adjustable folding stand.',
+    price: 30.0,
+    promoPrice: 21.0,
+    rating: 4.0,
+    reviewCount: 17,
+    category: 'Hardware Parts',
+  ),
+];
 
 final List<Review> _sampleReviews = [
   Review(
@@ -381,6 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         onFavoriteToggle: (p, fav) {
                                           ProductStore.instance.toggleFavorite(p.id, fav);
                                         },
+                                        username: widget.username,
                                       ),
                                     ),
                                     child: const Text('Browse Catalog'),
@@ -417,7 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context,
                                 CategoryListScreen(
                                   categoryTitle: 'Hardware Parts',
-                                  categorySubtitle: 'Full Inventory',
+                                  categorySubtitle: 'Everything you need, built to last.',
                                   filters: const ['filter 1', 'filter 2', 'Promotion'],
                                   products: products,
                                   onLoadMore: () async {
@@ -431,6 +529,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   onFavoriteToggle: (p, fav) {
                                     ProductStore.instance.toggleFavorite(p.id, fav);
                                   },
+                                  username: widget.username,
                                 ),
                               ),
                             ),
@@ -468,7 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.redAccent,
                               onTap: () => _push(
                                 context,
-                                FavoritesScreen(favorites: ProductStore.instance.favorites),
+                                FavoritesScreen(favorites: ProductStore.instance.favorites, username: widget.username),
                               ),
                             ),
                           ),
@@ -493,12 +592,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               context,
                               CategoryListScreen(
                                 categoryTitle: 'Hardware Parts',
-                                categorySubtitle: 'Full Inventory',
+                                categorySubtitle: 'Everything you need, built to last.',
                                 filters: const ['filter 1', 'filter 2', 'Promotion'],
                                 products: products,
                                 onLoadMore: () async => <Product>[],
                                 onProductTap: (p) => _push(context, _buildItemDetailScreen(context, p)),
                                 onFavoriteToggle: (p, fav) => ProductStore.instance.toggleFavorite(p.id, fav),
+                                username: widget.username,
                               ),
                             ),
                             child: const Text('See All', style: TextStyle(color: Colors.orangeAccent)),
@@ -583,6 +683,48 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: 0, // Home tab is active on this screen
+        onTap: (index) {
+          switch (index) {
+            case 0: // Home — already here, nothing to do
+              break;
+            case 1: // Browse
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CategoryListScreen(
+                    categoryTitle: 'Hardware Parts',
+                    categorySubtitle: 'Everything you need, built to last.',
+                    products: ProductStore.instance.products,
+                    onLoadMore: () async => <Product>[],
+                    onProductTap: (p) => _push(context, _buildItemDetailScreen(context, p)),
+                    onFavoriteToggle: (p, fav) => ProductStore.instance.toggleFavorite(p.id, fav),
+                    username: widget.username,
+                  ),
+                ),
+              );
+              break;
+            case 2: // Favorites
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FavoritesScreen(
+                    favorites: ProductStore.instance.favorites,
+                    username: widget.username,
+                  ),
+                ),
+              );
+              break;
+            case 3: // Profile
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ProfilePage(username: widget.username)),
+              );
+              break;
+          }
+        },
       ),
     );
   }
