@@ -33,6 +33,8 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethod? _selectedMethod;
   final List<PaymentMethod> _paymentMethods = [];
+  bool _showCreditCardForm = false;
+  final GlobalKey<CreditCardFormState> _creditCardFormKey = GlobalKey<CreditCardFormState>();
 
   @override
   void initState() {
@@ -71,6 +73,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
     ]);
   }
 
+  void _handlePaymentMethodTap(PaymentMethod method) {
+    setState(() {
+      _selectedMethod = method;
+
+      // Show credit card form only when credit_card is selected
+      if (method.id == 'credit_card') {
+        _showCreditCardForm = true;
+      } else {
+        _showCreditCardForm = false;
+      }
+    });
+  }
+
   void _proceedToPayment() {
     if (_selectedMethod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,26 +99,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } else if (_selectedMethod!.id == 'spaylater') {
       _showPinDialog();
     } else if (_selectedMethod!.id == 'credit_card') {
-      _showCreditCardForm();
+      // Validate the credit card form
+      if (_creditCardFormKey.currentState?.validateForm() ?? false) {
+        _processExternalPayment();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all credit card details correctly'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } else {
       _showExternalPayment();
     }
-  }
-
-  void _showCreditCardForm() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => CreditCardForm(
-        onSave: () {
-          Navigator.pop(context); // Close the form dialog
-          _processExternalPayment();
-        },
-        onCancel: () {
-          Navigator.pop(context); // Close the form dialog
-        },
-      ),
-    );
   }
 
   void _showPinDialog() {
@@ -285,12 +294,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     method: method,
                     isSelected: _selectedMethod?.id == method.id,
                     onTap: () {
-                      setState(() {
-                        _selectedMethod = method;
-                      });
+                      _handlePaymentMethodTap(method);
                     },
                   )),
                   const SizedBox(height: 16),
+
+                  // Credit Card Form - shown inline when credit_card is selected
+                  if (_showCreditCardForm) ...[
+                    CreditCardForm(
+                      key: _creditCardFormKey,
+                      onDataChanged: (data) {
+                        // Optional: Handle data changes if needed
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   PaymentSummaryCard(
                     subtotal: widget.totalAmount,
                     originalAmount: widget.originalAmount,
@@ -307,7 +326,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey,
+                  color: Colors.grey.withOpacity(0.1),
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
