@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/payment_method_card.dart';
 import '../../widgets/payment_summary_card.dart';
 import '../../widgets/pin_dialog.dart';
+import '../../widgets/credit_card_form.dart';
 import 'payment_success_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -78,11 +79,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    if (_selectedMethod!.isInternal) {
+    if (_selectedMethod!.id == 'wallet') {
       _showPinDialog();
+    } else if (_selectedMethod!.id == 'spaylater') {
+      _showPinDialog();
+    } else if (_selectedMethod!.id == 'credit_card') {
+      _showCreditCardForm();
     } else {
       _showExternalPayment();
     }
+  }
+
+  void _showCreditCardForm() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => CreditCardForm(
+        onSave: () {
+          Navigator.pop(context); // Close the form dialog
+          _processExternalPayment();
+        },
+        onCancel: () {
+          Navigator.pop(context); // Close the form dialog
+        },
+      ),
+    );
   }
 
   void _showPinDialog() {
@@ -119,7 +140,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               savings: widget.savings,
               itemsCount: widget.selectedItems.length,
               paymentMethod: _selectedMethod!.name,
-              purchasedItemIds: purchasedIds, // Pass purchased item IDs
+              purchasedItemIds: purchasedIds,
             ),
           ),
         );
@@ -167,7 +188,50 @@ class _PaymentScreenState extends State<PaymentScreen> {
             savings: widget.savings,
             itemsCount: widget.selectedItems.length,
             paymentMethod: _selectedMethod!.name,
-            purchasedItemIds: purchasedIds, // Pass purchased item IDs
+            purchasedItemIds: purchasedIds,
+          ),
+        ),
+      );
+    });
+  }
+
+  void _processExternalPayment() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Processing payment...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 2), () {
+      Navigator.pop(context);
+
+      // Get IDs of purchased items
+      final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentSuccessScreen(
+            totalAmount: widget.totalAmount,
+            originalAmount: widget.originalAmount,
+            savings: widget.savings,
+            itemsCount: widget.selectedItems.length,
+            paymentMethod: _selectedMethod!.name,
+            purchasedItemIds: purchasedIds,
           ),
         ),
       );
@@ -243,7 +307,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey,
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
