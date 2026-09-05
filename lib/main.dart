@@ -26,7 +26,7 @@ class ProductDemoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Steelverse Hardware Store',
+      title: 'Pro Hardware & Tools',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       home: const WelcomePage(),
@@ -270,7 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     p.category.toLowerCase().contains(_searchQuery.toLowerCase()))
                     .toList();
 
-                // Pagination Calculations
                 final int totalPages = (products.length / _itemsPerPage).ceil();
                 final int startIndex = (_currentPage - 1) * _itemsPerPage;
                 final int endIndex = (startIndex + _itemsPerPage < products.length)
@@ -285,52 +284,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header Section: Small icon + Full Width Search Bar
                       Row(
                         children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.build_circle_rounded, color: Colors.orangeAccent, size: 36),
-                              SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'STEELVERSE',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w400,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Hardware Store',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
+                          const Icon(Icons.build_circle_rounded, color: Colors.orangeAccent, size: 32),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: SizedBox(
-                              height: 40,
+                              height: 44,
                               child: TextField(
                                 controller: _searchController,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                style: const TextStyle(color: Colors.white, fontSize: 14),
                                 onChanged: (val) {
                                   setState(() {
                                     _searchQuery = val.trim();
                                   });
                                 },
                                 decoration: InputDecoration(
-                                  hintText: 'Search...',
+                                  hintText: 'Search products, tools...',
                                   hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-                                  prefixIcon: const Icon(Icons.search, color: Colors.orangeAccent, size: 18),
+                                  prefixIcon: const Icon(Icons.search, color: Colors.orangeAccent, size: 20),
                                   suffixIcon: _searchQuery.isNotEmpty
                                       ? IconButton(
                                     icon: const Icon(Icons.clear, color: Colors.white54, size: 16),
@@ -343,32 +316,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                   )
                                       : null,
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.12),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                                  fillColor: Colors.white.withValues(alpha: 0.15),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: const BorderSide(color: Colors.white24),
+                                    borderRadius: BorderRadius.circular(22),
+                                    borderSide: const BorderSide(color: Colors.white38),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(22),
                                     borderSide: const BorderSide(color: Colors.orangeAccent),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           IconButton(
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 26),
+                            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 24),
                             onPressed: () => _openCart(context),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           IconButton(
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.person_outline, color: Colors.white, size: 26),
+                            icon: const Icon(Icons.person_outline, color: Colors.white, size: 24),
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -431,6 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                       const SizedBox(height: 24),
 
+                      // Banner with Shop Name
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -455,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'PRO HARDWARE & TOOLS',
+                                    'Steelverse Hardware Store',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -690,7 +664,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
 
-                      // Shopee-style Pagination Bar (shows only when products > 10)
                       if (products.length > 10) ...[
                         const SizedBox(height: 24),
                         Row(
