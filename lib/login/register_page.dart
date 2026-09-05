@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'database_helper.dart';
 import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -30,33 +30,35 @@ class _RegisterPageState extends State<RegisterPage> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      // Save user to local SQLite DB via DatabaseHelper
+      await DatabaseHelper.instance.registerUser(
+        name: username,
+        email: username, // Pass username as email identifier
+        password: password,
+      );
 
-    if (prefs.containsKey(username)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Username already exists! Please choose another.'),
+          content: Text('Registration successful! Please log in.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Username/Email already exists! Please choose another.'),
           backgroundColor: Colors.redAccent,
         ),
       );
-      return;
     }
-
-    await prefs.setString(username, password);
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Registration successful! Please log in.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
   }
 
   @override
@@ -117,7 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           controller: _usernameController,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Username',
+                            labelText: 'Username or Email',
                             labelStyle: const TextStyle(color: Colors.white70),
                             prefixIcon: const Icon(Icons.person, color: Colors.orangeAccent),
                             filled: true,

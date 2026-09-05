@@ -17,6 +17,8 @@ class ProductStore extends ChangeNotifier {
   final Set<String> _purchasedProductIds = {};
   final ProductRepository _repository = ProductRepository();
 
+  // Alias getter so AdminPage explicitly receives all items
+  List<Product> get allProducts => List.unmodifiable(_products);
   List<Product> get products => List.unmodifiable(_products);
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
   List<Product> get favorites => _products.where((p) => p.isFavorite).toList();
@@ -130,6 +132,7 @@ class ProductStore extends ChangeNotifier {
   Future<void> addProduct(Product product) async {
     await _repository.addProduct(product);
     _products.add(product);
+    _reviews.putIfAbsent(product.id, () => _generateReviewsFor(product));
     notifyListeners();
   }
 
@@ -139,6 +142,7 @@ class ProductStore extends ChangeNotifier {
     await _repository.deleteProduct(productId);
     _products.removeWhere((p) => p.id == productId);
     _cartItems.removeWhere((i) => i.product.id == productId);
+    _reviews.remove(productId);
     notifyListeners();
   }
 
@@ -193,9 +197,6 @@ class ProductStore extends ChangeNotifier {
     await _repository.updateProduct(updatedProduct);
     final index = _products.indexWhere((p) => p.id == updatedProduct.id);
     if (index != -1) {
-      // Preserve the existing local-only favorite flag -- updatedProduct
-      // typically comes from an admin edit form that doesn't know or care
-      // about favorite status.
       _products[index] = updatedProduct.copyWith(isFavorite: _products[index].isFavorite);
       notifyListeners();
     }

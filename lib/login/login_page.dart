@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
+import 'database_helper.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -29,15 +29,18 @@ class _LoginPageState extends State<LoginPage> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    final prefs = await SharedPreferences.getInstance();
-    final storedPassword = prefs.getString(username);
+    // Authenticate against SQLite database via DatabaseHelper
+    final userMap = await DatabaseHelper.instance.loginUser(username, password);
 
-    if (storedPassword != null && storedPassword == password) {
+    if (userMap != null) {
       if (!mounted) return;
+      // Get registered name or fallback to entered username
+      final String displayName = userMap['name'] ?? username;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(username: username),
+          builder: (context) => HomeScreen(username: displayName),
         ),
       );
     } else {
@@ -109,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _usernameController,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: 'Username',
+                            labelText: 'Username or Email',
                             labelStyle: const TextStyle(color: Colors.white70),
                             prefixIcon: const Icon(Icons.person, color: Colors.orangeAccent),
                             filled: true,
@@ -123,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                               borderSide: const BorderSide(color: Colors.orangeAccent),
                             ),
                           ),
-                          validator: (val) => val == null || val.trim().isEmpty ? 'Enter your username' : null,
+                          validator: (val) => val == null || val.trim().isEmpty ? 'Enter your username or email' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

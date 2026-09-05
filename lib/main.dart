@@ -963,7 +963,7 @@ class _GridProductCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                 children: [
                   Text(
                     '\$${product.price.toStringAsFixed(2)}',
                     style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),

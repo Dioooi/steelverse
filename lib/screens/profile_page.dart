@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../login/database_helper.dart';
 import '../login/welcome_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -39,12 +39,16 @@ class ProfilePage extends StatelessWidget {
     );
 
     if (confirm == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(username);
+      // Delete user from SQLite database
+      await DatabaseHelper.instance.deleteUser(username);
 
       if (!context.mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Account "$username" deleted.')),
+        SnackBar(
+          content: Text('Account "$username" deleted.'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
 
       _logout(context);
@@ -257,7 +261,6 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// Placeholder Page for Purchase History
 class PurchaseHistoryPage extends StatelessWidget {
   const PurchaseHistoryPage({super.key});
 

@@ -27,54 +27,56 @@ class WelcomePage extends StatelessWidget {
               Text('Admin Access', style: TextStyle(color: Colors.white)),
             ],
           ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: usernameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: usernameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.orangeAccent),
+                      ),
                     ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.orangeAccent),
-                    ),
+                    validator: (value) {
+                      if (value == null || value.trim() != 'admin123') {
+                        return 'Invalid admin username';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim() != 'admin123') {
-                      return 'Invalid admin username';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.orangeAccent),
+                      ),
                     ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.orangeAccent),
-                    ),
+                    validator: (value) {
+                      if (value == null || value != '123456') {
+                        return 'Invalid password';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value != '123456') {
-                      return 'Invalid password';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           actions: [
@@ -89,7 +91,7 @@ class WelcomePage extends StatelessWidget {
               ),
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop(); // Close dialog
+                  Navigator.of(dialogContext).pop();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminPage()),
@@ -109,7 +111,6 @@ class WelcomePage extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Dark Overlay
           Positioned.fill(
             child: Image.asset(
               'assets/pic store.webp',
@@ -118,11 +119,9 @@ class WelcomePage extends StatelessWidget {
           ),
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.75),
+              color: Colors.black.withValues(alpha: 0.75),
             ),
           ),
-
-          // Top-Left Protected Admin Button
           Positioned(
             top: 12,
             left: 12,
@@ -138,8 +137,6 @@ class WelcomePage extends StatelessWidget {
               ),
             ),
           ),
-
-          // Main Content Layer
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -147,11 +144,10 @@ class WelcomePage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Steelverse Brand Header Icon
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white24, width: 2),
                       ),
@@ -162,8 +158,6 @@ class WelcomePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-
-                    // App Title
                     const Text(
                       'STEELVERSE',
                       style: TextStyle(
@@ -183,13 +177,11 @@ class WelcomePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 48),
-
-                    // Card Container for Welcome Actions
                     Container(
                       padding: const EdgeInsets.all(24),
                       constraints: const BoxConstraints(maxWidth: 400),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.white12),
                       ),
@@ -205,15 +197,13 @@ class WelcomePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Log in or register to access catalog',
+                            'Log in or register to access the store',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.white54,
                             ),
                           ),
                           const SizedBox(height: 28),
-
-                          // Login Button
                           SizedBox(
                             width: double.infinity,
                             height: 48,
@@ -241,8 +231,6 @@ class WelcomePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 14),
-
-                          // Register Button
                           SizedBox(
                             width: double.infinity,
                             height: 48,
