@@ -1,5 +1,7 @@
 // main.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'models/cart_item.dart';
 import 'models/product.dart';
 import 'models/review.dart';
@@ -8,14 +10,26 @@ import 'screens/cart_screen.dart';
 import 'screens/category_list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/item_detail_screen.dart';
+import 'screens/payment_screen.dart';
 import 'theme/app_theme.dart';
-import 'state/product_store.dart';
+import 'state/product_store.dart';  
 import 'login/welcome_page.dart';
 import 'screens/profile_page.dart';
 import 'widgets/app_bottom_nav.dart';
 
-void main() {
-  ProductStore.instance.setProducts(_sampleProducts);
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Plain sqflite only works via Android/iOS platform channels. On desktop
+  // (Windows/Linux/macOS) it needs the FFI-based factory instead -- this
+  // switches automatically depending on where the app is actually running.
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  // _sampleProducts is now only a one-time seed for an empty database, not
+  // the live data source -- ProductStore.init() loads the real catalog
+  // from SQLite from here on, including any admin add/edit/delete.
+  await ProductStore.instance.init(seedProducts: _sampleProducts);
   ProductStore.instance.updateCart([]);
   runApp(const ProductDemoApp());
 }
@@ -223,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildItemDetailScreen(BuildContext context, Product product) {
     return ItemDetailScreen(
       product: product,
-      reviews: _sampleReviews,
+      username: widget.username,
       onAddToCart: () {
         ProductStore.instance.addToCart(product);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -234,9 +248,22 @@ class _HomeScreenState extends State<HomeScreen> {
       onFavoriteChanged: (fav) {
         ProductStore.instance.toggleFavorite(product.id, fav);
       },
-      onBuyNow: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Buy now tapped')),
-      ),
+      onBuyNow: () {
+        // Was previously just a placeholder snackbar with no real checkout,
+        // which also meant "purchased" was never recorded for this path.
+        final originalTotal = product.price;
+        final payTotal = product.displayPrice;
+        _push(
+          context,
+          PaymentScreen(
+            selectedItems: [CartItem(product: product, quantity: 1)],
+            totalAmount: payTotal,
+            originalAmount: originalTotal,
+            savings: originalTotal - payTotal,
+            user: defaultUser,
+          ),
+        );
+      },
     );
   }
 
@@ -284,7 +311,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Section: Small icon + Full Width Search Bar
                       Row(
                         children: [
                           const Icon(Icons.build_circle_rounded, color: Colors.orangeAccent, size: 32),
@@ -404,7 +430,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                       const SizedBox(height: 24),
 
-                      // Banner with Shop Name
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(

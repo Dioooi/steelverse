@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../models/review.dart';
+import 'product_repository.dart';
 
 /// A single shared in-memory store so favorite/cart state stays in sync
 /// across every screen, instead of each screen holding its own local copy.
@@ -14,11 +15,37 @@ class ProductStore extends ChangeNotifier {
   final List<CartItem> _cartItems = [];
   final Map<String, List<Review>> _reviews = {};
   final Set<String> _purchasedProductIds = {};
+  final ProductRepository _repository = ProductRepository();
 
   List<Product> get products => List.unmodifiable(_products);
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
   List<Product> get favorites => _products.where((p) => p.isFavorite).toList();
 
+  /// Call this once, at app startup, instead of setProducts(). Optionally
+  /// pass [seedProducts] -- they're only written to the local database the
+  /// very first time (if it's empty), so this is safe to call on every
+  /// launch without duplicating or overwriting real data.
+  Future<void> init({List<Product> seedProducts = const []}) async {
+    if (seedProducts.isNotEmpty) {
+      await _repository.seedIfEmpty(seedProducts);
+    }
+    final loaded = await _repository.getAllProducts();
+    // Favorites are kept local/session-only (not part of the database
+    // requirement), so preserve whatever's currently set rather than
+    // resetting every product back to "not favorited" on reload.
+    final favoriteIds = _products.where((p) => p.isFavorite).map((p) => p.id).toSet();
+    _products
+      ..clear()
+      ..addAll(loaded.map((p) => p.copyWith(isFavorite: favoriteIds.contains(p.id))));
+    for (final product in _products) {
+      _reviews.putIfAbsent(product.id, () => _generateReviewsFor(product));
+    }
+    notifyListeners();
+  }
+
+  /// Legacy manual override -- prefer init() now that products live in the
+  /// local database. Still here in case anything (e.g. a test) needs to
+  /// inject a product list directly without touching storage.
   void setProducts(List<Product> products) {
     _products
       ..clear()
@@ -98,14 +125,18 @@ class ProductStore extends ChangeNotifier {
   // Inventory Management Methods (Admin Actions)
   // -------------------------------------------------------------------
 
-  /// Adds a new product to the catalog.
-  void addProduct(Product product) {
+  /// Adds a new product to the catalog, persisting it to the local
+  /// database first.
+  Future<void> addProduct(Product product) async {
+    await _repository.addProduct(product);
     _products.add(product);
     notifyListeners();
   }
 
-  /// Removes a product from the catalog by ID and removes it from cart/favorites if present.
-  void deleteProduct(String productId) {
+  /// Removes a product from the catalog by ID and removes it from the cart
+  /// if present.
+  Future<void> deleteProduct(String productId) async {
+    await _repository.deleteProduct(productId);
     _products.removeWhere((p) => p.id == productId);
     _cartItems.removeWhere((i) => i.product.id == productId);
     notifyListeners();
@@ -158,10 +189,14 @@ class ProductStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateProduct(Product updatedProduct) {
+  Future<void> updateProduct(Product updatedProduct) async {
+    await _repository.updateProduct(updatedProduct);
     final index = _products.indexWhere((p) => p.id == updatedProduct.id);
     if (index != -1) {
-      _products[index] = updatedProduct;
+      // Preserve the existing local-only favorite flag -- updatedProduct
+      // typically comes from an admin edit form that doesn't know or care
+      // about favorite status.
+      _products[index] = updatedProduct.copyWith(isFavorite: _products[index].isFavorite);
       notifyListeners();
     }
   }
