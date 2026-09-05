@@ -64,14 +64,14 @@ class _PinDialogState extends State<PinDialog> {
             ),
             const SizedBox(height: 24),
 
-            // PIN Dots
+            // PIN Dots - REDUCED SIZE
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(6, (index) {
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 40,
-                  height: 48,
+                  margin: const EdgeInsets.symmetric(horizontal: 4), // Reduced from 8
+                  width: 32, // Reduced from 40
+                  height: 40, // Reduced from 48
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: _showError ? Colors.red : AppColors.primary,
@@ -82,8 +82,8 @@ class _PinDialogState extends State<PinDialog> {
                   child: Center(
                     child: index < _pin.length
                         ? Container(
-                      width: 16,
-                      height: 16,
+                      width: 12, // Reduced from 16
+                      height: 12, // Reduced from 16
                       decoration: const BoxDecoration(
                         color: AppColors.primary,
                         shape: BoxShape.circle,
