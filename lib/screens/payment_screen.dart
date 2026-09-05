@@ -35,11 +35,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final List<PaymentMethod> _paymentMethods = [];
   bool _showCreditCardForm = false;
   final GlobalKey<CreditCardFormState> _creditCardFormKey = GlobalKey<CreditCardFormState>();
+  final TextEditingController _locationController = TextEditingController();
+  bool _isEditingLocation = false;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     _initializePaymentMethods();
+    _locationController.text = widget.user.address;
+  }
+
+  @override
+  void dispose() {
+    _locationController.dispose();
+    super.dispose();
   }
 
   void _initializePaymentMethods() {
@@ -76,8 +86,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   void _handlePaymentMethodTap(PaymentMethod method) {
     setState(() {
       _selectedMethod = method;
-
-      // Show credit card form only when credit_card is selected
       if (method.id == 'credit_card') {
         _showCreditCardForm = true;
       } else {
@@ -87,9 +95,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _proceedToPayment() {
+    if (_isProcessing) return;
+
     if (_selectedMethod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a payment method')),
+      );
+      return;
+    }
+
+    if (_locationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your delivery address'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -99,7 +119,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } else if (_selectedMethod!.id == 'spaylater') {
       _showPinDialog();
     } else if (_selectedMethod!.id == 'credit_card') {
-      // Validate the credit card form
       if (_creditCardFormKey.currentState?.validateForm() ?? false) {
         _processExternalPayment();
       } else {
@@ -133,11 +152,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
   void _verifyPin(String pin) {
     Navigator.pop(context);
 
+    if (_isProcessing) return;
+    setState(() {
+      _isProcessing = true;
+    });
+
     if (pin == widget.user.pin) {
       if (widget.user.balance >= widget.totalAmount) {
         widget.user.balance -= widget.totalAmount;
 
-        // Get IDs of purchased items
         final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
         Navigator.pushReplacement(
@@ -154,9 +177,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         );
       } else {
+        setState(() {
+          _isProcessing = false;
+        });
         _showErrorDialog('Insufficient Balance', 'Your balance is insufficient. Please choose another payment method.');
       }
     } else {
+      setState(() {
+        _isProcessing = false;
+      });
       _showErrorDialog('Incorrect PIN', 'The PIN you entered is incorrect. Please try again.');
     }
   }
@@ -185,7 +214,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pop(context);
 
-      // Get IDs of purchased items
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
       Navigator.pushReplacement(
@@ -228,7 +256,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pop(context);
 
-      // Get IDs of purchased items
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
       Navigator.pushReplacement(
@@ -255,7 +282,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+            },
             child: const Text('OK'),
           ),
         ],
@@ -298,18 +327,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     },
                   )),
                   const SizedBox(height: 16),
-
-                  // Credit Card Form - shown inline when credit_card is selected
                   if (_showCreditCardForm) ...[
                     CreditCardForm(
                       key: _creditCardFormKey,
-                      onDataChanged: (data) {
-                        // Optional: Handle data changes if needed
-                      },
+                      onDataChanged: (data) {},
                     ),
                     const SizedBox(height: 16),
                   ],
-
                   PaymentSummaryCard(
                     subtotal: widget.totalAmount,
                     originalAmount: widget.originalAmount,
@@ -319,14 +343,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
           ),
-
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey,
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
@@ -391,18 +414,87 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${widget.user.name} ${widget.user.phone}',
+                    widget.user.name,
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ),
+                IconButton(
+                  icon: Icon(
+                    _isEditingLocation ? Icons.close : Icons.edit,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isEditingLocation = !_isEditingLocation;
+                      if (!_isEditingLocation) {
+                        _locationController.text = widget.user.address;
+                      }
+                    });
+                  },
+                ),
               ],
             ),
+            const SizedBox(height: 8),
+            if (_isEditingLocation)
+              TextFormField(
+                controller: _locationController,
+                decoration: InputDecoration(
+                  hintText: 'Enter your delivery address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.save, size: 20),
+                    onPressed: () {
+                      if (_locationController.text.trim().isNotEmpty) {
+                        setState(() {
+                          _isEditingLocation = false;
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid address'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                maxLines: 3,
+                textInputAction: TextInputAction.done,
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: Text(
+                  _locationController.text.isEmpty
+                      ? 'No address provided'
+                      : _locationController.text,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _locationController.text.isEmpty
+                        ? Colors.grey
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
             const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.only(left: 28),
               child: Text(
-                widget.user.address,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                widget.user.phone,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
