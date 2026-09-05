@@ -34,11 +34,6 @@ class ProductDemoApp extends StatelessWidget {
   }
 }
 
-// Curated hardware + furniture catalog. Only a subset has a matching real
-// photo (imageUrl) for now -- the rest fall back to ProductImage's neutral
-// placeholder rather than risk a mismatched or broken hotlinked photo.
-// Swap in imageUrl/imageAsset per item as real product photography becomes
-// available; nothing else needs to change.
 final List<Product> _sampleProducts = [
   Product(
     id: 'item_1',
@@ -144,6 +139,24 @@ final List<Product> _sampleProducts = [
     reviewCount: 17,
     category: 'Hardware Parts',
   ),
+  Product(
+    id: 'item_11',
+    name: 'Laser Distance Meter 50m',
+    description: 'High precision digital measure tool with LCD screen.',
+    price: 35.0,
+    rating: 4.5,
+    reviewCount: 23,
+    category: 'Hardware Parts',
+  ),
+  Product(
+    id: 'item_12',
+    name: 'Electric Pressure Washer 1800W',
+    description: 'High-pressure water spray gun for patio and car cleaning.',
+    price: 89.0,
+    rating: 4.8,
+    reviewCount: 65,
+    category: 'Hardware Parts',
+  ),
 ];
 
 final List<Review> _sampleReviews = [
@@ -161,7 +174,6 @@ final List<Review> _sampleReviews = [
   ),
 ];
 
-// Default user for the app
 final User defaultUser = User(
   name: 'Lee Jia Cheng',
   phone: '(+60) 11-7281 2642',
@@ -182,6 +194,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
 
   @override
   void dispose() {
@@ -231,7 +245,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Dark Overlay
           Positioned.fill(
             child: Image.asset(
               'assets/pic store.webp',
@@ -243,14 +256,12 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.black.withValues(alpha: 0.75),
             ),
           ),
-          // Main Content wrapped in AnimatedBuilder to automatically listen for store updates
           SafeArea(
             child: AnimatedBuilder(
               animation: ProductStore.instance,
               builder: (context, _) {
                 final products = ProductStore.instance.products;
 
-                // Filter products based on search input
                 final searchResults = _searchQuery.isEmpty
                     ? <Product>[]
                     : products
@@ -259,12 +270,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     p.category.toLowerCase().contains(_searchQuery.toLowerCase()))
                     .toList();
 
+                // Pagination Calculations
+                final int totalPages = (products.length / _itemsPerPage).ceil();
+                final int startIndex = (_currentPage - 1) * _itemsPerPage;
+                final int endIndex = (startIndex + _itemsPerPage < products.length)
+                    ? startIndex + _itemsPerPage
+                    : products.length;
+
+                final List<Product> paginatedProducts =
+                products.isNotEmpty ? products.sublist(startIndex, endIndex) : [];
+
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // App Header with Search Bar, Cart, and Profile Icon
                       Row(
                         children: [
                           const Row(
@@ -296,8 +316,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(width: 12),
-
-                          // Search Bar in Header
                           Expanded(
                             child: SizedBox(
                               height: 40,
@@ -362,7 +380,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
 
-                      // Search Results Dropdown overlay under Header
                       if (_searchQuery.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         Container(
@@ -414,7 +431,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                       const SizedBox(height: 24),
 
-                      // Hero Banner Card
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -502,7 +518,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Single Row Navigation Menu
                       Row(
                         children: [
                           Expanded(
@@ -575,7 +590,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Horizontal Featured Items Carousel
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -632,7 +646,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Product Grid Listing
                       const Text(
                         'Available Products',
                         style: TextStyle(
@@ -655,7 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           : GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: products.length,
+                        itemCount: paginatedProducts.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 14,
@@ -663,7 +676,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           childAspectRatio: 0.78,
                         ),
                         itemBuilder: (context, index) {
-                          final p = products[index];
+                          final p = paginatedProducts[index];
                           return _GridProductCard(
                             product: p,
                             onTap: () => _push(context, _buildItemDetailScreen(context, p)),
@@ -676,6 +689,54 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
+
+                      // Shopee-style Pagination Bar (shows only when products > 10)
+                      if (products.length > 10) ...[
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left, color: Colors.white70),
+                              onPressed: _currentPage > 1
+                                  ? () => setState(() => _currentPage--)
+                                  : null,
+                            ),
+                            ...List.generate(totalPages, (index) {
+                              final pageNum = index + 1;
+                              final bool isSelected = pageNum == _currentPage;
+
+                              return GestureDetector(
+                                onTap: () => setState(() => _currentPage = pageNum),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Colors.deepOrange : Colors.white10,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: isSelected ? Colors.orangeAccent : Colors.white24,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$pageNum',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.white70,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right, color: Colors.white70),
+                              onPressed: _currentPage < totalPages
+                                  ? () => setState(() => _currentPage++)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 );
@@ -685,12 +746,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       bottomNavigationBar: AppBottomNav(
-        currentIndex: 0, // Home tab is active on this screen
+        currentIndex: 0,
         onTap: (index) {
           switch (index) {
-            case 0: // Home — already here, nothing to do
+            case 0:
               break;
-            case 1: // Browse
+            case 1:
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -706,7 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               break;
-            case 2: // Favorites
+            case 2:
               Navigator.push(
                 context,
                 MaterialPageRoute(
