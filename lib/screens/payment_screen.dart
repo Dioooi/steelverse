@@ -56,22 +56,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _paymentMethods.addAll([
       PaymentMethod(
         id: 'wallet',
-        name: 'ShopeePay',
+        name: 'Balance', // Changed from 'ShopeePay' to 'Balance'
         icon: Icons.wallet,
         balance: widget.user.balance,
         isInternal: true,
         subtitle: 'Wallet Balance (RM${widget.user.balance.toStringAsFixed(2)})',
-      ),
-      PaymentMethod(
-        id: 'spaylater',
-        name: 'SPayLater',
-        icon: Icons.credit_card,
-        isInternal: true,
-        subtitle: 'Activate to get RM200 voucher package',
-        installmentOptions: [
-          InstallmentOption(months: 1, monthlyPayment: 8.50, interest: '0%'),
-          InstallmentOption(months: 3, monthlyPayment: 8.50, interest: '0%', discount: 'RM5 OFF'),
-        ],
       ),
       PaymentMethod(
         id: 'credit_card',
@@ -115,8 +104,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     if (_selectedMethod!.id == 'wallet') {
-      _showPinDialog();
-    } else if (_selectedMethod!.id == 'spaylater') {
       _showPinDialog();
     } else if (_selectedMethod!.id == 'credit_card') {
       if (_creditCardFormKey.currentState?.validateForm() ?? false) {

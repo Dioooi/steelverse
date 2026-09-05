@@ -14,7 +14,6 @@ class CreditCardForm extends StatefulWidget {
   CreditCardFormState createState() => CreditCardFormState();
 }
 
-// Make the State class public by removing the underscore
 class CreditCardFormState extends State<CreditCardForm> {
   final _formKey = GlobalKey<FormState>();
   final _cardNumberController = TextEditingController();
@@ -22,12 +21,10 @@ class CreditCardFormState extends State<CreditCardForm> {
   final _cvcController = TextEditingController();
   final _cardHolderController = TextEditingController();
   bool _saveCard = false;
-  bool _agreeConsent = false;
 
   @override
   void initState() {
     super.initState();
-    // Add listeners to update parent when data changes
     _cardNumberController.addListener(_notifyDataChanged);
     _expiryController.addListener(_notifyDataChanged);
     _cvcController.addListener(_notifyDataChanged);
@@ -54,7 +51,6 @@ class CreditCardFormState extends State<CreditCardForm> {
       'cvc': _cvcController.text,
       'cardHolder': _cardHolderController.text,
       'saveCard': _saveCard.toString(),
-      'agreeConsent': _agreeConsent.toString(),
     });
   }
 
@@ -88,67 +84,46 @@ class CreditCardFormState extends State<CreditCardForm> {
     _notifyDataChanged();
   }
 
-  // Luhn Algorithm to validate card number
   bool _isValidCardNumber(String cardNumber) {
-    // Remove all spaces
     String cleaned = cardNumber.replaceAll(RegExp(r'\s+'), '');
-
-    // Check if it contains only digits and has valid length (16 for most cards)
     if (!RegExp(r'^[0-9]{13,19}$').hasMatch(cleaned)) {
       return false;
     }
-
-    // Luhn Algorithm
     int sum = 0;
     bool alternate = false;
-
-    // Start from the rightmost digit
     for (int i = cleaned.length - 1; i >= 0; i--) {
       int digit = int.parse(cleaned[i]);
-
       if (alternate) {
         digit *= 2;
         if (digit > 9) {
           digit = digit - 9;
         }
       }
-
       sum += digit;
       alternate = !alternate;
     }
-
     return sum % 10 == 0;
   }
 
   bool _isValidExpiry(String expiry) {
-    // Check format MM/YY
     if (!RegExp(r'^[0-9]{2}/[0-9]{2}$').hasMatch(expiry)) {
       return false;
     }
-
     String monthStr = expiry.substring(0, 2);
     String yearStr = expiry.substring(3, 5);
-
     int month = int.parse(monthStr);
-    int year = int.parse(yearStr) + 2000; // Convert YY to YYYY
-
-    // Validate month (1-12)
+    int year = int.parse(yearStr) + 2000;
     if (month < 1 || month > 12) {
       return false;
     }
-
-    // Get current date
     DateTime now = DateTime.now();
     int currentYear = now.year;
     int currentMonth = now.month;
-
-    // Check if expiry date is in the future
     if (year < currentYear) {
       return false;
     } else if (year == currentYear && month < currentMonth) {
       return false;
     }
-
     return true;
   }
 
@@ -168,7 +143,6 @@ class CreditCardFormState extends State<CreditCardForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -197,8 +171,6 @@ class CreditCardFormState extends State<CreditCardForm> {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // AM EX indicator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
@@ -215,8 +187,6 @@ class CreditCardFormState extends State<CreditCardForm> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Card Number
               TextFormField(
                 controller: _cardNumberController,
                 decoration: const InputDecoration(
@@ -231,23 +201,18 @@ class CreditCardFormState extends State<CreditCardForm> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a card number';
                   }
-
                   String cleaned = value.replaceAll(RegExp(r'\s+'), '');
                   if (cleaned.length < 16) {
                     return 'Please enter a valid 16-digit card number';
                   }
-
                   if (!_isValidCardNumber(value)) {
                     return 'Invalid card number. Please check and try again.';
                   }
-
                   return null;
                 },
                 onChanged: _formatCardNumber,
               ),
               const SizedBox(height: 16),
-
-              // MM/YY and CVC Row
               Row(
                 children: [
                   Expanded(
@@ -264,15 +229,12 @@ class CreditCardFormState extends State<CreditCardForm> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter expiry date';
                         }
-
                         if (value.length < 5) {
                           return 'Invalid expiry date format';
                         }
-
                         if (!_isValidExpiry(value)) {
                           return 'Card has expired or invalid date';
                         }
-
                         return null;
                       },
                       onChanged: _formatExpiry,
@@ -294,16 +256,13 @@ class CreditCardFormState extends State<CreditCardForm> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter CVC';
                         }
-
                         String cleaned = value.replaceAll(RegExp(r'\s+'), '');
                         if (cleaned.length < 3 || cleaned.length > 4) {
                           return 'CVC must be 3 or 4 digits';
                         }
-
                         if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
                           return 'CVC must contain only numbers';
                         }
-
                         return null;
                       },
                     ),
@@ -311,8 +270,6 @@ class CreditCardFormState extends State<CreditCardForm> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Card Holder Name
               TextFormField(
                 controller: _cardHolderController,
                 decoration: const InputDecoration(
@@ -324,17 +281,13 @@ class CreditCardFormState extends State<CreditCardForm> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter card holder name';
                   }
-
                   if (value.length < 3) {
                     return 'Please enter a valid name';
                   }
-
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-
-              // Save card checkbox
               Row(
                 children: [
                   Checkbox(
@@ -353,50 +306,6 @@ class CreditCardFormState extends State<CreditCardForm> {
                     ),
                   ),
                 ],
-              ),
-
-              // Consent checkbox
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Checkbox(
-                    value: _agreeConsent,
-                    onChanged: (value) {
-                      setState(() {
-                        _agreeConsent = value ?? false;
-                      });
-                      _notifyDataChanged();
-                    },
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'By saving your card you grant us your consent to store your payment method for future orders. You can withdraw consent at any time.',
-                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Privacy policy link
-              Padding(
-                padding: const EdgeInsets.only(left: 40),
-                child: TextButton(
-                  onPressed: () {
-                    // Navigate to privacy policy
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 30),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'For more information, please visit the Privacy policy.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
