@@ -7,7 +7,6 @@ import '../widgets/product_banner_header.dart';
 import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
 import 'favorites_screen.dart';
-import 'profile_page.dart';
 // HomeScreen currently lives in main.dart -- adjust this path if you later
 // move it into its own file (e.g. 'home_screen.dart').
 import '../main.dart';
@@ -317,18 +316,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   ),
                 ),
               ).then((_) {
-                // Refresh so any favorites removed on that screen show up
-                // as unfavorited here immediately, not just on next rebuild.
                 if (mounted) setState(() {});
               });
-              break;
-            case 3: // Profile
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfilePage(username: widget.username),
-                ),
-              );
               break;
           }
         },

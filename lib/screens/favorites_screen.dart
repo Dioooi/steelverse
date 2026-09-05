@@ -6,7 +6,6 @@ import '../widgets/app_bottom_nav.dart';
 import '../widgets/product_banner_header.dart';
 import '../widgets/product_list_tile.dart';
 import 'category_list_screen.dart';
-import 'profile_page.dart';
 import '../main.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -166,12 +165,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               );
               break;
             case 2: // Favorites — already here, nothing to do
-              break;
-            case 3: // Profile
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ProfilePage(username: widget.username)),
-              );
               break;
           }
         },
