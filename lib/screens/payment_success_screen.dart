@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../state/product_store.dart';
+import '../main.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
   final double totalAmount;
@@ -150,15 +151,24 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   _removePurchasedItemsFromCart();
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => const HomeScreen(),
+                    ),
+                        (route) => false,
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(
-                  'Back to Home',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  'Back to Main Menu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
