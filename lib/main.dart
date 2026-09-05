@@ -49,7 +49,7 @@ final List<Product> _sampleProducts = [
     reviewCount: 34,
     category: 'Hardware Parts',
     isFavorite: true,
-    imageUrl: 'https://images.unsplash.com/photo-1542583633-aa0b0e378e2e?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1542583633-aa0b0e378e2e?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_2',
@@ -61,7 +61,7 @@ final List<Product> _sampleProducts = [
     reviewCount: 51,
     category: 'Hardware Parts',
     isFavorite: true,
-    imageUrl: 'https://images.unsplash.com/photo-1593307315564-c96172dc89dc?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1593307315564-c96172dc89dc?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_3',
@@ -71,7 +71,7 @@ final List<Product> _sampleProducts = [
     rating: 5.0,
     reviewCount: 27,
     category: 'Hardware Parts',
-    imageUrl: 'https://images.unsplash.com/photo-1650501662347-284973714a68?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1650501662347-284973714a68?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_4',
@@ -82,7 +82,7 @@ final List<Product> _sampleProducts = [
     rating: 4.0,
     reviewCount: 19,
     category: 'Hardware Parts',
-    imageUrl: 'https://images.unsplash.com/photo-1704732061018-3ac738176c20?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1704732061018-3ac738176c20?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_5',
@@ -102,7 +102,7 @@ final List<Product> _sampleProducts = [
     rating: 4.0,
     reviewCount: 15,
     category: 'Furniture',
-    imageUrl: 'https://images.unsplash.com/photo-1620388639945-990753377b58?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1620388639945-990753377b58?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_7',
@@ -112,7 +112,7 @@ final List<Product> _sampleProducts = [
     rating: 5.0,
     reviewCount: 40,
     category: 'Furniture',
-    imageUrl: 'https://images.unsplash.com/photo-1688578735352-9a6f2ac3b70a?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1688578735352-9a6f2ac3b70a?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_8',
@@ -132,7 +132,7 @@ final List<Product> _sampleProducts = [
     rating: 5.0,
     reviewCount: 8,
     category: 'Furniture',
-    imageUrl: 'https://images.unsplash.com/photo-1719324923613-ff0884b031ed?fm=jpg&q=80&w=400&fit=crop&auto=format',
+    imageUrl: 'https://images.unsplash.com/photo-1719324923613-ff0884b031ed?fm=jpg&q=80&w=900&fit=crop&auto=format',
   ),
   Product(
     id: 'item_10',

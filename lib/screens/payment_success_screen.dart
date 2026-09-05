@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../state/product_store.dart';
 
-class PaymentSuccessScreen extends StatelessWidget {
+class PaymentSuccessScreen extends StatefulWidget {
   final double totalAmount;
   final double originalAmount;
   final double savings;
@@ -20,6 +20,23 @@ class PaymentSuccessScreen extends StatelessWidget {
     required this.paymentMethod,
     this.purchasedItemIds,
   });
+
+  @override
+  State<PaymentSuccessScreen> createState() => _PaymentSuccessScreenState();
+}
+
+class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Record the purchase the moment this screen appears, i.e. the moment
+    // payment actually succeeds -- not tied to whether the user later taps
+    // "Back to Home". This is what "write a review" is gated on.
+    final ids = (widget.purchasedItemIds != null && widget.purchasedItemIds!.isNotEmpty)
+        ? widget.purchasedItemIds!
+        : ProductStore.instance.cartItems.map((i) => i.product.id).toList();
+    ProductStore.instance.recordPurchase(ids);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +66,7 @@ class PaymentSuccessScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'You have successfully paid RM${totalAmount.toStringAsFixed(2)}',
+              'You have successfully paid RM${widget.totalAmount.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
@@ -63,17 +80,17 @@ class PaymentSuccessScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    _buildDetailRow('Payment Method', paymentMethod),
+                    _buildDetailRow('Payment Method', widget.paymentMethod),
                     const Divider(),
-                    _buildDetailRow('Items', '$itemsCount item(s)'),
+                    _buildDetailRow('Items', '${widget.itemsCount} item(s)'),
                     const Divider(),
-                    _buildDetailRow('Subtotal', 'RM${originalAmount.toStringAsFixed(2)}'),
+                    _buildDetailRow('Subtotal', 'RM${widget.originalAmount.toStringAsFixed(2)}'),
                     const Divider(),
-                    _buildDetailRow('Savings', '-RM${savings.toStringAsFixed(2)}'),
+                    _buildDetailRow('Savings', '-RM${widget.savings.toStringAsFixed(2)}'),
                     const Divider(),
                     _buildDetailRow(
                       'Total Paid',
-                      'RM${totalAmount.toStringAsFixed(2)}',
+                      'RM${widget.totalAmount.toStringAsFixed(2)}',
                       isBold: true,
                     ),
                   ],
@@ -85,7 +102,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
             // Delivery Info Card
             Card(
-              color: AppColors.primary.withOpacity(0.05),
+              color: AppColors.primary.withValues(alpha: 0.05),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -152,9 +169,9 @@ class PaymentSuccessScreen extends StatelessWidget {
   }
 
   void _removePurchasedItemsFromCart() {
-    if (purchasedItemIds != null && purchasedItemIds!.isNotEmpty) {
+    if (widget.purchasedItemIds != null && widget.purchasedItemIds!.isNotEmpty) {
       // Remove each purchased item individually using your removeFromCart method
-      for (final productId in purchasedItemIds!) {
+      for (final productId in widget.purchasedItemIds!) {
         ProductStore.instance.removeFromCart(productId);
       }
     } else {
