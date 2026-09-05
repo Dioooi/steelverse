@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../state/product_store.dart';
+import 'user_management_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -299,6 +300,8 @@ class _AdminPageState extends State<AdminPage> {
                       onPressed: () {
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
+                        } else {
+                          Navigator.pushReplacementNamed(context, '/');
                         }
                       },
                     ),
@@ -312,6 +315,17 @@ class _AdminPageState extends State<AdminPage> {
                       ),
                     ),
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.people_alt_outlined, color: Colors.orangeAccent),
+                      tooltip: 'User Management',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const UserManagementPage()),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 4),
                     IconButton.filled(
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.orangeAccent,

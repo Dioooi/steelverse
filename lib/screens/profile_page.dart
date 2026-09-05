@@ -4,8 +4,13 @@ import '../login/welcome_page.dart';
 
 class ProfilePage extends StatelessWidget {
   final String username;
+  final String? userId;
 
-  const ProfilePage({super.key, required this.username});
+  const ProfilePage({
+    super.key,
+    required this.username,
+    this.userId,
+  });
 
   Future<void> _logout(BuildContext context) async {
     Navigator.of(context).pushAndRemoveUntil(
@@ -39,8 +44,11 @@ class ProfilePage extends StatelessWidget {
     );
 
     if (confirm == true) {
-      // Delete user from SQLite database
-      await DatabaseHelper.instance.deleteUser(username);
+      if (userId != null) {
+        await DatabaseHelper.instance.deleteUserById(userId!);
+      } else {
+        await DatabaseHelper.instance.deleteUserById(username);
+      }
 
       if (!context.mounted) return;
 
@@ -116,8 +124,6 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Account Details Card
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -154,8 +160,6 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Purchase History Button
                       InkWell(
                         onTap: () {
                           Navigator.push(
@@ -206,8 +210,6 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 28),
-
-                      // Delete Account Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -228,8 +230,6 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Logout Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,

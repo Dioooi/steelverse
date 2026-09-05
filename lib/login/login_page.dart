@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../screens/admin_page.dart';
 import 'database_helper.dart';
 import 'register_page.dart';
 
@@ -27,15 +28,33 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final username = _usernameController.text.trim();
-    final password = _passwordController.text;
+    final password = _passwordController.text.trim();
 
-    // Authenticate against SQLite database via DatabaseHelper
+    if (username.toLowerCase() == 'admin' && password == 'admin123') {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminPage()),
+      );
+      return;
+    }
+
     final userMap = await DatabaseHelper.instance.loginUser(username, password);
 
     if (userMap != null) {
       if (!mounted) return;
-      // Get registered name or fallback to entered username
-      final String displayName = userMap['name'] ?? username;
+
+      if ((userMap['is_blocked'] ?? 0) == 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your account has been blocked by an administrator.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      final String displayName = userMap['name'] ?? userMap['username'] ?? username;
 
       Navigator.pushReplacement(
         context,

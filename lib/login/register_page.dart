@@ -30,15 +30,22 @@ class _RegisterPageState extends State<RegisterPage> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    try {
-      // Save user to local SQLite DB via DatabaseHelper
-      await DatabaseHelper.instance.registerUser(
-        name: username,
-        email: username, // Pass username as email identifier
-        password: password,
-      );
+    final result = await DatabaseHelper.instance.registerUser(
+      name: username,
+      email: username,
+      password: password,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
+
+    if (result == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Username/Email already exists! Please choose another.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registration successful! Please log in.'),
@@ -49,14 +56,6 @@ class _RegisterPageState extends State<RegisterPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Username/Email already exists! Please choose another.'),
-          backgroundColor: Colors.redAccent,
-        ),
       );
     }
   }

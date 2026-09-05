@@ -9,7 +9,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('steelverse_hardware.db');
+    _database = await _initDB('app_database.db');
     return _database!;
   }
 
@@ -27,62 +27,106 @@ class DatabaseHelper {
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE users (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE,
         password TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'customer'
+        is_blocked INTEGER DEFAULT 0
       )
     ''');
-
-    // Default Seed Admin
-    await db.insert('users', {
-      'id': 'admin_1',
-      'name': 'Admin',
-      'email': 'admin@hardware.com',
-      'password': '123',
-      'role': 'admin'
-    });
   }
 
-  // Register New User
-  Future<int> registerUser({
-    required String name,
-    required String email,
-    required String password,
-    String role = 'customer',
-  }) async {
-    final db = await instance.database;
-    return await db.insert('users', {
-      'id': 'u_${DateTime.now().millisecondsSinceEpoch}',
-      'name': name.trim(),
-      'email': email.trim().toLowerCase(),
-      'password': password.trim(),
-      'role': role,
-    });
-  }
-
-  // Authenticate / Login User
-  Future<Map<String, dynamic>?> loginUser(String email, String password) async {
+  Future<Map<String, dynamic>?> loginUser(String username, String password) async {
     final db = await instance.database;
     final results = await db.query(
       'users',
-      where: 'LOWER(email) = ? AND password = ?',
-      whereArgs: [email.trim().toLowerCase(), password.trim()],
+      where: '(username = ? OR email = ?) AND password = ?',
+      whereArgs: [username, username, password],
     );
 
     if (results.isNotEmpty) {
-      return results.first;
+      final user = Map<String, dynamic>.from(results.first);
+      user['name'] = user['username'];
+      return user;
     }
     return null;
   }
 
-  Future<int> deleteUser(String username) async {
+  Future<int> registerUser({
+    required String name,
+    String? email,
+    required String password,
+  }) async {
+    final db = await instance.database;
+
+    final existing = await db.query(
+      'users',
+      where: 'username = ? OR (email IS NOT NULL AND email = ? AND email != "")',
+      whereArgs: [name, email ?? name],
+    );
+
+    if (existing.isNotEmpty) {
+      return -1;
+    }
+
+    return await db.insert('users', {
+      'username': name,
+      'email': email ?? name,
+      'password': password,
+      'is_blocked': 0,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    final db = await instance.database;
+    final users = await db.query(
+      'users',
+      where: 'LOWER(username) != ?',
+      whereArgs: ['admin'],
+    );
+
+    return users.map((u) {
+      final map = Map<String, dynamic>.from(u);
+      map['name'] = map['username'];
+      return map;
+    }).toList();
+  }
+
+  Future<int> updateUserBlockStatus(int id, int isBlocked) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'is_blocked': isBlocked},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> toggleBlockUser(dynamic identifier, bool block) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'is_blocked': block ? 1 : 0},
+      where: 'id = ? OR username = ?',
+      whereArgs: [identifier, identifier],
+    );
+  }
+
+  Future<int> deleteUser(dynamic identifier) async {
     final db = await instance.database;
     return await db.delete(
-      'users', // Ensure this matches your database table name
-      where: 'name = ?', // Change 'name' to 'email' or 'username' depending on your column name
-      whereArgs: [username],
+      'users',
+      where: 'id = ? OR username = ?',
+      whereArgs: [identifier, identifier],
+    );
+  }
+
+  Future<int> deleteUserById(dynamic id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'users',
+      where: 'id = ? OR username = ?',
+      whereArgs: [id, id],
     );
   }
 }
