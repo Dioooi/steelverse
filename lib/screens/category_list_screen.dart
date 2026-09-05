@@ -51,8 +51,13 @@ class CategoryListScreen extends StatefulWidget {
 }
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
-  late List<Product> _products;
+  /// Only holds items appended via onLoadMore -- the base catalog is read
+  /// live from ProductStore.instance.products on every rebuild instead of
+  /// a one-time snapshot, so new/removed products and categories show up
+  /// immediately even while this screen is already open.
+  final List<Product> _extraLoadedProducts = [];
   late String _selectedFilter;
+  String _selectedCategory = 'All';
   bool _loadingMore = false;
   bool _hasMore = true;
   final ScrollController _scrollController = ScrollController();
@@ -63,9 +68,17 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   @override
   void initState() {
     super.initState();
-    _products = List.of(widget.products);
     _selectedFilter = widget.filters.isNotEmpty ? _getFilterLabel(widget.filters.first) : '';
     _scrollController.addListener(_onScroll);
+  }
+
+  /// Category chips are derived from whatever categories actually exist in
+  /// the current product list (plus "All"), instead of being hardcoded --
+  /// so this keeps working if an admin adds a product in a new category.
+  List<String> get _availableCategories {
+    final allProducts = [...ProductStore.instance.products, ..._extraLoadedProducts];
+    final categories = allProducts.map((p) => p.category).toSet().toList()..sort();
+    return ['All', ...categories];
   }
 
   @override
@@ -118,16 +131,15 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   List<Product> get _visibleProducts {
-    // Always read favorite status from the store, not the locally cached
-    // copy -- this screen's local _products can go stale if the user
-    // favorites/unfavorites the same item from Favorites or Item Detail
-    // and then comes back here without a full rebuild.
-    final storeFavorites = {
-      for (final p in ProductStore.instance.products) p.id: p.isFavorite,
-    };
-    List<Product> list = _products
-        .map((p) => p.copyWith(isFavorite: storeFavorites[p.id] ?? p.isFavorite))
-        .toList();
+    // Read the base catalog live from the store every time, not a locally
+    // cached snapshot -- this is what makes new/removed products and
+    // favorite changes show up immediately, from any screen.
+    final allProducts = [...ProductStore.instance.products, ..._extraLoadedProducts];
+    List<Product> list = List.of(allProducts);
+
+    if (_selectedCategory != 'All') {
+      list = list.where((p) => p.category == _selectedCategory).toList();
+    }
 
     if (_selectedFilter.toLowerCase() == 'promotion') {
       return list.where((p) => p.hasPromo).toList();
@@ -174,7 +186,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     try {
       final more = await widget.onLoadMore!();
       setState(() {
-        _products.addAll(more);
+        _extraLoadedProducts.addAll(more);
         if (more.isEmpty) _hasMore = false;
       });
     } finally {
@@ -184,144 +196,159 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = _visibleProducts;
-    final displayFilters = widget.filters.map((f) => _getFilterLabel(f)).toList();
+    return AnimatedBuilder(
+      animation: ProductStore.instance,
+      builder: (context, _) {
+        final visible = _visibleProducts;
+        final displayFilters = widget.filters.map((f) => _getFilterLabel(f)).toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
-        top: false,
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverToBoxAdapter(
-              child: ProductBannerHeader(
-                title: widget.categoryTitle,
-                subtitle: _selectedFilter.toLowerCase() == 'promotion'
-                    ? 'Promotion Included'
-                    : widget.categorySubtitle,
-                bannerImageUrl: widget.bannerImageUrl,
-                onBack: () => Navigator.of(context).maybePop(),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: ProductFilterBar(
-                  filters: displayFilters,
-                  selected: _selectedFilter,
-                  onSelected: _handleFilterTap,
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, i) {
-                    final product = visible[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: ProductListTile(
-                          product: product,
-                          onTap: () => widget.onProductTap?.call(product),
-                          onFavoriteChanged: (fav) {
-                            // Persist to the single source of truth first --
-                            // this is what was missing. Without it, toggling
-                            // a favorite here never reached ProductStore, so
-                            // Favorites and this screen drifted out of sync.
-                            ProductStore.instance.toggleFavorite(product.id, fav);
-                            setState(() {
-                              _products[_products.indexOf(product)] =
-                                  product.copyWith(isFavorite: fav);
-                            });
-                            widget.onFavoriteToggle?.call(product, fav);
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  childCount: visible.length,
-                ),
-              ),
-            ),
-            if (widget.onLoadMore != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: _loadingMore
-                        ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                    )
-                        : !_hasMore
-                        ? const Text(
-                      "You've reached the end",
-                      style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
-                    )
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentIndex: 1, // Browse/Category tab is active on this screen
-        onTap: (index) {
-          // If a parent shell owns navigation (e.g. an IndexedStack), let it
-          // handle the tab switch instead of pushing new routes here.
-          if (widget.onNavTap != null) {
-            widget.onNavTap!(index);
-            return;
-          }
-
-          switch (index) {
-            case 0: // Home
-            // popUntil(isFirst) would land on WelcomePage, not HomeScreen,
-            // since HomeScreen is pushed *after* the welcome/login screen.
-            // pushAndRemoveUntil clears the stack and lands on a fresh
-            // HomeScreen instead -- same pattern ProfilePage's logout uses.
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
-                    (route) => false,
-              );
-              break;
-            case 1: // Browse — already here, nothing to do
-              break;
-            case 2: // Favorites
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FavoritesScreen(
-                    favorites: ProductStore.instance.favorites,
+        return Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          body: SafeArea(
+            top: false,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: ProductBannerHeader(
+                    title: widget.categoryTitle,
+                    subtitle: _selectedFilter.toLowerCase() == 'promotion'
+                        ? 'Promotion Included'
+                        : _selectedCategory != 'All'
+                        ? 'Showing: $_selectedCategory'
+                        : widget.categorySubtitle,
                     bannerImageUrl: widget.bannerImageUrl,
-                    onProductTap: widget.onProductTap,
-                    username: widget.username,
+                    onBack: () => Navigator.of(context).maybePop(),
                   ),
                 ),
-              ).then((_) {
-                if (mounted) setState(() {});
-              });
-              break;
-          }
-        },
-      ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                    child: ProductFilterBar(
+                      filters: _availableCategories,
+                      selected: _selectedCategory,
+                      onSelected: (category) => setState(() => _selectedCategory = category),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: ProductFilterBar(
+                      filters: displayFilters,
+                      selected: _selectedFilter,
+                      onSelected: _handleFilterTap,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, i) {
+                        final product = visible[i];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: ProductListTile(
+                              product: product,
+                              onTap: () => widget.onProductTap?.call(product),
+                              onFavoriteChanged: (fav) {
+                                // Persist to the single source of truth --
+                                // AnimatedBuilder below listens to ProductStore
+                                // directly, so this alone is enough to refresh
+                                // the UI everywhere, not just on this screen.
+                                ProductStore.instance.toggleFavorite(product.id, fav);
+                                widget.onFavoriteToggle?.call(product, fav);
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: visible.length,
+                    ),
+                  ),
+                ),
+                if (widget.onLoadMore != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: _loadingMore
+                            ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                        )
+                            : !_hasMore
+                            ? const Text(
+                          "You've reached the end",
+                          style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+                        )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: AppBottomNav(
+            currentIndex: 1, // Browse/Category tab is active on this screen
+            onTap: (index) {
+              // If a parent shell owns navigation (e.g. an IndexedStack), let it
+              // handle the tab switch instead of pushing new routes here.
+              if (widget.onNavTap != null) {
+                widget.onNavTap!(index);
+                return;
+              }
+
+              switch (index) {
+                case 0: // Home
+                // popUntil(isFirst) would land on WelcomePage, not HomeScreen,
+                // since HomeScreen is pushed *after* the welcome/login screen.
+                // pushAndRemoveUntil clears the stack and lands on a fresh
+                // HomeScreen instead -- same pattern ProfilePage's logout uses.
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
+                        (route) => false,
+                  );
+                  break;
+                case 1: // Browse — already here, nothing to do
+                  break;
+                case 2: // Favorites
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FavoritesScreen(
+                        favorites: ProductStore.instance.favorites,
+                        bannerImageUrl: widget.bannerImageUrl,
+                        onProductTap: widget.onProductTap,
+                        username: widget.username,
+                      ),
+                    ),
+                  ).then((_) {
+                    // Refresh so any favorites removed on that screen show up
+                    // as unfavorited here immediately, not just on next rebuild.
+                    if (mounted) setState(() {});
+                  });
+                  break;
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }
