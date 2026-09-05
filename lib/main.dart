@@ -537,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: _MenuTile(
-                              title: 'Featured',
+                              title: 'Product details',
                               subtitle: 'Item details',
                               icon: Icons.star_outline_rounded,
                               color: Colors.amber.shade700,
