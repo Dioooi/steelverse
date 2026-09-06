@@ -12,10 +12,11 @@ import 'screens/favorites_screen.dart';
 import 'screens/item_detail_screen.dart';
 import 'screens/payment_screen.dart';
 import 'theme/app_theme.dart';
-import 'state/product_store.dart';  
+import 'state/product_store.dart';
 import 'login/welcome_page.dart';
 import 'screens/profile_page.dart';
 import 'widgets/app_bottom_nav.dart';
+import 'widgets/product_image.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -882,7 +883,15 @@ class _HorizontalProductCard extends StatelessWidget {
                     color: Colors.white10,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.hardware, color: Colors.orangeAccent, size: 38),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ProductImage(
+                      imageUrl: product.imageUrl,
+                      assetPath: product.imageAsset,
+                      width: double.infinity,
+                      height: 70,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -948,7 +957,15 @@ class _GridProductCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.build_rounded, color: Colors.white70, size: 40),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ProductImage(
+                      imageUrl: product.imageUrl,
+                      assetPath: product.imageAsset,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -963,7 +980,7 @@ class _GridProductCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
+                children: [
                   Text(
                     '\$${product.price.toStringAsFixed(2)}',
                     style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
