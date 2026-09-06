@@ -22,14 +22,13 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3, // Increment version
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
-    // Users table
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +39,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Cart items table
     await db.execute('''
       CREATE TABLE cart_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,30 +54,45 @@ class DatabaseHelper {
       )
     ''');
 
-    // NEW: Purchase history table
     await db.execute('''
       CREATE TABLE purchase_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         order_id TEXT NOT NULL UNIQUE,
-        product_ids TEXT NOT NULL,  -- Store as JSON array or comma-separated
-        product_names TEXT NOT NULL, -- Store as JSON array or comma-separated
+        product_ids TEXT NOT NULL,
+        product_names TEXT NOT NULL,
         total_amount REAL NOT NULL,
         original_amount REAL NOT NULL,
         savings REAL NOT NULL,
         items_count INTEGER NOT NULL,
         payment_method TEXT NOT NULL,
-        purchase_date TEXT NOT NULL, -- ISO 8601 format
-        status TEXT DEFAULT 'completed' -- completed, pending, cancelled
+        purchase_date TEXT NOT NULL,
+        status TEXT DEFAULT 'completed'
       )
     ''');
 
-    // NEW: Index for faster queries
+    await db.execute('''
+      CREATE TABLE credit_cards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        card_number TEXT NOT NULL,
+        card_holder_name TEXT NOT NULL,
+        expiry_date TEXT NOT NULL,
+        cvv TEXT NOT NULL,
+        is_default INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (username) REFERENCES users(username)
+      )
+    ''');
+
     await db.execute('''
       CREATE INDEX idx_purchase_history_username ON purchase_history(username)
     ''');
     await db.execute('''
       CREATE INDEX idx_purchase_history_date ON purchase_history(purchase_date)
+    ''');
+    await db.execute('''
+      CREATE INDEX idx_credit_cards_username ON credit_cards(username)
     ''');
   }
 
@@ -101,7 +114,6 @@ class DatabaseHelper {
       ''');
     }
 
-    // Add purchase history table in version 3
     if (oldVersion < 3) {
       await db.execute('''
         CREATE TABLE IF NOT EXISTS purchase_history (
@@ -127,9 +139,27 @@ class DatabaseHelper {
         CREATE INDEX IF NOT EXISTS idx_purchase_history_date ON purchase_history(purchase_date)
       ''');
     }
-  }
 
-  // --- Cart Database Methods --- (keep existing)
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS credit_cards (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL,
+          card_number TEXT NOT NULL,
+          card_holder_name TEXT NOT NULL,
+          expiry_date TEXT NOT NULL,
+          cvv TEXT NOT NULL,
+          is_default INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (username) REFERENCES users(username)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_credit_cards_username ON credit_cards(username)
+      ''');
+    }
+  }
 
   Future<List<CartItem>> getCartForUser(String username) async {
     final db = await instance.database;
@@ -182,9 +212,6 @@ class DatabaseHelper {
     await batch.commit(noResult: true);
   }
 
-  // --- NEW: Purchase History Methods ---
-
-  /// Save a purchase record
   Future<int> savePurchase({
     required String username,
     required String orderId,
@@ -203,7 +230,7 @@ class DatabaseHelper {
     return await db.insert('purchase_history', {
       'username': username,
       'order_id': orderId,
-      'product_ids': productIds.join(','), // Store as comma-separated string
+      'product_ids': productIds.join(','),
       'product_names': productNames.join(','),
       'total_amount': totalAmount,
       'original_amount': originalAmount,
@@ -215,7 +242,6 @@ class DatabaseHelper {
     });
   }
 
-  /// Get purchase history for a specific user
   Future<List<Map<String, dynamic>>> getPurchaseHistory(String username) async {
     final db = await instance.database;
     final results = await db.query(
@@ -227,7 +253,6 @@ class DatabaseHelper {
     return results;
   }
 
-  /// Get all purchase history (for admin)
   Future<List<Map<String, dynamic>>> getAllPurchaseHistory() async {
     final db = await instance.database;
     final results = await db.query(
@@ -237,7 +262,6 @@ class DatabaseHelper {
     return results;
   }
 
-  /// Get purchase by order ID
   Future<Map<String, dynamic>?> getPurchaseByOrderId(String orderId) async {
     final db = await instance.database;
     final results = await db.query(
@@ -248,7 +272,6 @@ class DatabaseHelper {
     return results.isNotEmpty ? results.first : null;
   }
 
-  /// Update purchase status
   Future<int> updatePurchaseStatus(String orderId, String status) async {
     final db = await instance.database;
     return await db.update(
@@ -259,7 +282,6 @@ class DatabaseHelper {
     );
   }
 
-  /// Delete a purchase record
   Future<int> deletePurchase(String orderId) async {
     final db = await instance.database;
     return await db.delete(
@@ -269,7 +291,6 @@ class DatabaseHelper {
     );
   }
 
-  /// Clear all purchase history for a user
   Future<int> clearUserPurchaseHistory(String username) async {
     final db = await instance.database;
     return await db.delete(
@@ -279,7 +300,83 @@ class DatabaseHelper {
     );
   }
 
-  // --- Existing User Management Methods --- (keep all your existing methods)
+  Future<int> saveCreditCard({
+    required String username,
+    required String cardNumber,
+    required String cardHolderName,
+    required String expiryDate,
+    required String cvv,
+    bool isDefault = false,
+  }) async {
+    final db = await instance.database;
+
+    if (isDefault) {
+      await db.update(
+        'credit_cards',
+        {'is_default': 0},
+        where: 'username = ?',
+        whereArgs: [username],
+      );
+    }
+
+    return await db.insert('credit_cards', {
+      'username': username,
+      'card_number': cardNumber,
+      'card_holder_name': cardHolderName,
+      'expiry_date': expiryDate,
+      'cvv': cvv,
+      'is_default': isDefault ? 1 : 0,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getCreditCards(String username) async {
+    final db = await instance.database;
+    final results = await db.query(
+      'credit_cards',
+      where: 'username = ?',
+      whereArgs: [username],
+      orderBy: 'is_default DESC, created_at DESC',
+    );
+    return results;
+  }
+
+  Future<Map<String, dynamic>?> getDefaultCreditCard(String username) async {
+    final db = await instance.database;
+    final results = await db.query(
+      'credit_cards',
+      where: 'username = ? AND is_default = 1',
+      whereArgs: [username],
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+
+  Future<int> deleteCreditCard(int cardId) async {
+    final db = await instance.database;
+    return await db.delete(
+      'credit_cards',
+      where: 'id = ?',
+      whereArgs: [cardId],
+    );
+  }
+
+  Future<int> setDefaultCreditCard(String username, int cardId) async {
+    final db = await instance.database;
+
+    await db.update(
+      'credit_cards',
+      {'is_default': 0},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+
+    return await db.update(
+      'credit_cards',
+      {'is_default': 1},
+      where: 'id = ? AND username = ?',
+      whereArgs: [cardId, username],
+    );
+  }
 
   Future<Map<String, dynamic>?> loginUser(String username, String password) async {
     final db = await instance.database;

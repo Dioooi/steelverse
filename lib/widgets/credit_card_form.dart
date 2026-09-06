@@ -4,10 +4,12 @@ import '../theme/app_theme.dart';
 
 class CreditCardForm extends StatefulWidget {
   final Function(Map<String, String> cardData) onDataChanged;
+  final Map<String, dynamic>? initialData;
 
   const CreditCardForm({
     super.key,
     required this.onDataChanged,
+    this.initialData,
   });
 
   @override
@@ -21,10 +23,21 @@ class CreditCardFormState extends State<CreditCardForm> {
   final _cvcController = TextEditingController();
   final _cardHolderController = TextEditingController();
   bool _saveCard = false;
+  bool _isDefault = false;
 
   @override
   void initState() {
     super.initState();
+
+    if (widget.initialData != null) {
+      _cardNumberController.text = widget.initialData!['card_number'] ?? '';
+      _cardHolderController.text = widget.initialData!['card_holder_name'] ?? '';
+      _expiryController.text = widget.initialData!['expiry_date'] ?? '';
+      _cvcController.text = widget.initialData!['cvv'] ?? '';
+      _saveCard = true;
+      _isDefault = (widget.initialData!['is_default'] as int? ?? 0) == 1;
+    }
+
     _cardNumberController.addListener(_notifyDataChanged);
     _expiryController.addListener(_notifyDataChanged);
     _cvcController.addListener(_notifyDataChanged);
@@ -51,7 +64,19 @@ class CreditCardFormState extends State<CreditCardForm> {
       'cvc': _cvcController.text,
       'cardHolder': _cardHolderController.text,
       'saveCard': _saveCard.toString(),
+      'isDefault': _isDefault.toString(),
     });
+  }
+
+  Map<String, String> getCardData() {
+    return {
+      'cardNumber': _cardNumberController.text.replaceAll(' ', ''),
+      'cardHolderName': _cardHolderController.text,
+      'expiryDate': _expiryController.text,
+      'cvv': _cvcController.text,
+      'saveCard': _saveCard.toString(),
+      'isDefault': _isDefault.toString(),
+    };
   }
 
   void _formatCardNumber(String value) {
@@ -307,6 +332,50 @@ class CreditCardFormState extends State<CreditCardForm> {
                   ),
                 ],
               ),
+              if (_saveCard)
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _isDefault,
+                      onChanged: (value) {
+                        setState(() {
+                          _isDefault = value ?? false;
+                        });
+                        _notifyDataChanged();
+                      },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Set as default payment method',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              if (widget.initialData != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Saved card loaded successfully',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

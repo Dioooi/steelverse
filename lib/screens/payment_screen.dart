@@ -1,3 +1,4 @@
+// lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/cart_item.dart';
 import '../../models/user.dart';
@@ -7,6 +8,7 @@ import '../../widgets/payment_method_card.dart';
 import '../../widgets/payment_summary_card.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/credit_card_form.dart';
+import '../../login/database_helper.dart';
 import 'payment_success_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -38,14 +40,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _isEditingLocation = false;
   bool _isProcessing = false;
 
+  Map<String, String> _cardData = {};
+  Map<String, dynamic>? _savedCard;
+
   @override
   void initState() {
     super.initState();
     _initializePaymentMethods();
     _locationController.text = widget.user.address;
-    print('🔐 PaymentScreen initState - User: ${widget.user.name}');
-    print('🔐 User object: ${widget.user}');
-    print('🔐 User name length: ${widget.user.name.length}');
+    _loadSavedCard();
+  }
+
+  Future<void> _loadSavedCard() async {
+    try {
+      final card = await DatabaseHelper.instance.getDefaultCreditCard(widget.user.name);
+      if (card != null) {
+        setState(() {
+          _savedCard = card;
+        });
+        print('✅ Loaded saved card for user: ${widget.user.name}');
+      }
+    } catch (e) {
+      print('❌ Error loading saved card: $e');
+    }
   }
 
   @override
@@ -69,7 +86,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         name: 'Credit / Debit Card',
         icon: Icons.payment,
         isInternal: false,
-        subtitle: 'Add Card',
+        subtitle: _savedCard != null ? 'Saved card available' : 'Add Card',
       ),
     ]);
   }
@@ -79,6 +96,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _selectedMethod = method;
       if (method.id == 'credit_card') {
         _showCreditCardForm = true;
+        _loadSavedCard();
       } else {
         _showCreditCardForm = false;
       }
@@ -152,10 +170,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
-        print('✅ Payment successful for user: ${widget.user.name}');
-        print('📦 Purchased items: $purchasedIds');
-        print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -210,10 +224,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
-      print('✅ External payment successful for user: ${widget.user.name}');
-      print('📦 Purchased items: $purchasedIds');
-      print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -252,14 +262,42 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () async {
       Navigator.pop(context);
 
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
-      print('✅ Credit card payment successful for user: ${widget.user.name}');
-      print('📦 Purchased items: $purchasedIds');
-      print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
+      final cardData = _creditCardFormKey.currentState?.getCardData();
+
+      print('Card Data: $cardData');
+      print('Save Card: ${cardData?['saveCard']}');
+
+      if (cardData != null && cardData['saveCard'] == 'true') {
+        try {
+          final result = await DatabaseHelper.instance.saveCreditCard(
+            username: widget.user.name,
+            cardNumber: cardData['cardNumber'] ?? '',
+            cardHolderName: cardData['cardHolderName'] ?? '',
+            expiryDate: cardData['expiryDate'] ?? '',
+            cvv: cardData['cvv'] ?? '',
+            isDefault: cardData['isDefault'] == 'true',
+          );
+          print('✅ Credit card saved successfully! ID: $result');
+          setState(() {
+            _savedCard = {
+              'card_number': cardData['cardNumber'] ?? '',
+              'card_holder_name': cardData['cardHolderName'] ?? '',
+              'expiry_date': cardData['expiryDate'] ?? '',
+              'cvv': cardData['cvv'] ?? '',
+              'is_default': cardData['isDefault'] == 'true' ? 1 : 0,
+            };
+          });
+        } catch (e) {
+          print('❌ Error saving credit card: $e');
+        }
+      } else {
+        print('Card not saved - saveCard is false or cardData is null');
+      }
 
       Navigator.pushReplacement(
         context,
@@ -336,7 +374,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   if (_showCreditCardForm) ...[
                     CreditCardForm(
                       key: _creditCardFormKey,
-                      onDataChanged: (data) {},
+                      initialData: _savedCard,
+                      onDataChanged: (data) {
+                        _cardData = data;
+                      },
                     ),
                     const SizedBox(height: 16),
                   ],

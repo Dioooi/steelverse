@@ -1,9 +1,10 @@
+// lib/screens/payment/payment_success_screen.dart
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../state/product_store.dart';
 import '../main.dart';
 import '../../login/database_helper.dart';
-import '../../screens/profile_page.dart';
+import '../screens/profile_page.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
   final double totalAmount;
@@ -77,7 +78,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           : widget.username!.toUpperCase().padRight(3, 'X');
       final orderId = 'ORD-$timestamp-$userPrefix';
 
-      final result = await DatabaseHelper.instance.savePurchase(
+      await DatabaseHelper.instance.savePurchase(
         username: widget.username!,
         orderId: orderId,
         productIds: productIds,
@@ -91,7 +92,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
         status: 'completed',
       );
 
-      final savedPurchases = await DatabaseHelper.instance.getPurchaseHistory(widget.username!);
+      await DatabaseHelper.instance.getPurchaseHistory(widget.username!);
 
       setState(() {
         _isSaved = true;
@@ -108,7 +109,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
         );
       }
     } catch (e, stackTrace) {
-
       setState(() {
         _saveError = true;
         _errorMessage = e.toString();
@@ -139,15 +139,27 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
     }
   }
 
-  void _removePurchasedItemsFromCart() {
+  Future<void> _removePurchasedItemsFromCart() async {
     try {
       final purchasedIds = widget.purchasedItemIds ??
           ProductStore.instance.cartItems.map((i) => i.product.id).toList();
+
       for (final productId in purchasedIds) {
         ProductStore.instance.removeFromCart(productId);
       }
+
+      if (widget.username != null && widget.username!.isNotEmpty) {
+        await DatabaseHelper.instance.saveUserCart(
+          widget.username!,
+          ProductStore.instance.cartItems,
+        );
+        print('✅ Cart saved to database after purchase for user: ${widget.username}');
+      }
+
+      print('🛒 Removed ${purchasedIds.length} purchased items from cart');
+      print('📦 Remaining cart items: ${ProductStore.instance.cartItems.length}');
     } catch (e) {
-      print('Error clearing cart: $e');
+      print('❌ Error clearing cart: $e');
     }
   }
 
@@ -351,16 +363,18 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : () {
-                  _removePurchasedItemsFromCart();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (_) => HomeScreen(
-                        username: widget.username ?? 'User',
+                onPressed: _isSaving ? null : () async {
+                  await _removePurchasedItemsFromCart();
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => HomeScreen(
+                          username: widget.username ?? 'User',
+                        ),
                       ),
-                    ),
-                        (route) => false,
-                  );
+                          (route) => false,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
