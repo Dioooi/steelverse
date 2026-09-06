@@ -1,4 +1,3 @@
-// lib/screens/cart_screen.dart
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/user.dart';
@@ -7,8 +6,6 @@ import '../widgets/product_list_tile.dart';
 import '../state/product_store.dart';
 import 'payment_screen.dart';
 
-/// Corresponds to the "Cart" screen: per-item checkbox, favorite heart,
-/// select-all + subtotal footer, "Proceed Payment" CTA.
 class CartScreen extends StatefulWidget {
   final List<CartItem> items;
   final User? user;
@@ -46,8 +43,6 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  /// Updates local state, syncs to ProductStore (which handles SQLite persistence),
-  /// and notifies any external listeners.
   void _syncCart() {
     ProductStore.instance.updateCart(_items);
     widget.onCartUpdated?.call(List.of(_items));

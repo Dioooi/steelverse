@@ -1,5 +1,3 @@
-// models/purchase_history.dart
-
 class PurchaseHistory {
   final int? id;
   final String username;

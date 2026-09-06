@@ -2,22 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// A placeholder-aware image widget used for every product thumbnail,
-/// banner and gallery image in this package.
-///
-/// HOW TO WIRE UP REAL IMAGES LATER:
-/// - Pass [imageUrl] for either a network URL (http/https) OR a local
-///   device file path (e.g. from an image picker) -- both are detected
-///   automatically and rendered with Image.network / Image.file.
-/// - Pass [assetPath] for bundled/local images (e.g. category banners)
-///   that ship inside the app itself via pubspec.yaml.
-/// - Leaving everything null renders a soft grey placeholder box with an
-///   icon -- safe default, never crashes.
-///
-/// No extra packages required for local files (dart:io covers it). If you
-/// later want network caching, swap the `Image.network` call for
-/// `CachedNetworkImage` -- the rest of the app won't need to change since
-/// everything goes through this one widget.
 class ProductImage extends StatelessWidget {
   final String? imageUrl;
   final String? assetPath;
@@ -56,8 +40,6 @@ class ProductImage extends StatelessWidget {
           errorBuilder: (context, error, stack) => _placeholder(),
         );
       } else {
-        // Not an http(s) URL, so treat it as a local device file path
-        // (e.g. saved from an image picker).
         child = Image.file(
           File(imageUrl!),
           width: width,

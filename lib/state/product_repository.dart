@@ -4,10 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/product.dart';
 
-/// Wraps all direct SQLite access for products behind one small API, so
-/// ProductStore doesn't need to know or care that the data lives in
-/// sqflite specifically. Follows the same singleton + database service
-/// pattern taught in Practical 9 (SQLite).
 class ProductRepository {
   static final ProductRepository _productRepository = ProductRepository._internal();
   factory ProductRepository() => _productRepository;
@@ -17,14 +13,12 @@ class ProductRepository {
   static const String _favoritesTableName = 'favorites';
   static Database? _database;
 
-  /// Get an instance of database
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await initDatabase();
     return _database!;
   }
 
-  /// Initialize a database
   Future<Database> initDatabase() async {
     final getDirectory = await getApplicationDocumentsDirectory();
     final path = join(getDirectory.path, 'steelverse.db');
@@ -36,8 +30,6 @@ class ProductRepository {
     );
   }
 
-  /// Create the table(s) -- fires for brand new installs, already at the
-  /// latest version, so favorites is included here too.
   void _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $_tableName (
@@ -64,9 +56,6 @@ class ProductRepository {
     ''');
   }
 
-  /// Fires for anyone who already had the database from before favorites
-  /// existed (schema version 1), so their existing product data is kept
-  /// and only the new table gets added.
   void _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('''
@@ -79,10 +68,6 @@ class ProductRepository {
     }
   }
 
-  /// SQLite columns are plain scalar types, so galleryImageUrls (a List)
-  /// gets JSON-encoded into a single TEXT column here, and decoded back
-  /// out in [_fromRow]. Favorite status isn't stored at all -- it stays
-  /// local/session-only.
   Map<String, dynamic> _toRow(Product product) {
     final json = product.toJson();
     return {
@@ -141,9 +126,6 @@ class ProductRepository {
     await db.delete(_tableName, where: 'id = ?', whereArgs: [productId]);
   }
 
-  /// Only writes the seed list if the table is currently empty, so this is
-  /// safe to call every time the app starts without duplicating data or
-  /// wiping out anything an admin has already added or edited.
   Future<void> seedIfEmpty(List<Product> seedProducts) async {
     final db = await database;
     final countResult = Sqflite.firstIntValue(
@@ -157,7 +139,6 @@ class ProductRepository {
     await batch.commit(noResult: true);
   }
 
-  /// All product ids this specific user has favorited.
   Future<Set<String>> getFavoriteIds(String username) async {
     final db = await database;
     final rows = await db.query(

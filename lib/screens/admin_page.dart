@@ -34,13 +34,6 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  /// Opens the gallery or camera, then copies the picked photo into a
-  /// permanent folder inside the app's own documents directory.
-  ///
-  /// This copy step matters: the path returned by image_picker often
-  /// points at a temporary/cache location that the OS can clear at any
-  /// time, so if we stored that path directly it could go stale and break
-  /// exactly like the images did before -- just for a different reason.
   Future<String?> _pickAndSaveImage(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,

@@ -1,4 +1,3 @@
-// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -24,9 +23,6 @@ class AppColors {
   static const grey300 = Color(0xFFE0E0E0);
   static const grey600 = Color(0xFF757575);
 
-  // Dark-grey "industrial" palette — used for screens that want a darker,
-  // hardware-store feel (e.g. Browse/Category) while product cards
-  // themselves stay on the light `surface` color for readability.
   static const darkBackground = Color(0xFF1C1C1E);
   static const darkSurface = Color(0xFF2C2C2E);
   static const darkSurfaceAlt = Color(0xFF3A3A3C);
@@ -46,7 +42,6 @@ class AppTheme {
         primary: AppColors.primary,
         surface: AppColors.background,
         error: AppColors.danger,
-        // Remove the 'success' parameter - it doesn't exist in fromSeed()
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surface,

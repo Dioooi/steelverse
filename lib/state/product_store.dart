@@ -84,11 +84,11 @@ class ProductStore extends ChangeNotifier {
 
   List<Review> _generateReviewsFor(Product product) {
     final random = Random(product.id.hashCode);
-    final count = 2 + random.nextInt(3); // 2-4 reviews
+    final count = 2 + random.nextInt(3);
     final now = DateTime.now();
     return List.generate(count, (i) {
       final daysAgo = random.nextInt(120) + i * 3;
-      final ratingOffset = random.nextInt(3) - 1; // -1, 0, or +1
+      final ratingOffset = random.nextInt(3) - 1;
       final rating = (product.rating + ratingOffset).clamp(1, 5).toDouble();
       return Review(
         reviewerName: _reviewerPool[random.nextInt(_reviewerPool.length)],

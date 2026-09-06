@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// The bottom "Home / Browse / Profile" nav bar seen throughout the Figma.
-/// [currentIndex] and [onTap] are left for whoever owns app-wide navigation
-/// (likely wired to a shared IndexedStack/GoRouter by another dev) — this
-/// widget is purely presentational so it can be dropped into any screen.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;

@@ -1,4 +1,3 @@
-// login_page.dart
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../screens/admin_page.dart';

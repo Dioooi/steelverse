@@ -10,9 +10,6 @@ import '../widgets/rating_stars.dart';
 
 class ItemDetailScreen extends StatefulWidget {
   final Product product;
-  /// Legacy/unused for display now -- reviews are sourced live from
-  /// ProductStore.instance.reviewsFor(product.id) instead, since every
-  /// product used to be forced to share this exact same list.
   final List<Review> reviews;
   final String username;
   final VoidCallback? onAddToCart;
@@ -216,8 +213,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-
-                        // Main Image & Thumbnails Rail
                         SizedBox(
                           height: 300,
                           child: Row(
@@ -225,7 +220,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             children: [
                               Expanded(
                                 child: AspectRatio(
-                                  aspectRatio: 1, // square product photo, not a wide banner
+                                  aspectRatio: 1,
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: AppColors.surface,
@@ -305,11 +300,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           children: [
                             RatingStars(rating: product.rating, showValue: true),
                             Text(
-                              // Uses the actual review list length, not
-                              // product.reviewCount -- that stat is independent
-                              // sample data and previously didn't match what was
-                              // actually rendered below (e.g. said "27 reviews"
-                              // while only ever showing the same 2 sample reviews).
                               '(${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'})',
                               style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                             ),
@@ -317,7 +307,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Description Box
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
@@ -343,7 +332,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Reviews Box
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
@@ -393,7 +381,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
               ),
 
-              // Search Results Overlay
               if (_searchQuery.isNotEmpty)
                 Positioned(
                   top: 0,
@@ -627,8 +614,6 @@ class _ReviewTile extends StatelessWidget {
   ][m - 1];
 }
 
-/// Full-screen swipeable viewer opened by the "Show all" button -- a black
-/// backdrop, one image per page, a page counter, and a close button.
 class _GalleryViewer extends StatefulWidget {
   final List<String> images;
   final int initialIndex;

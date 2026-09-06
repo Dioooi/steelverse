@@ -1,4 +1,3 @@
-// lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/cart_item.dart';

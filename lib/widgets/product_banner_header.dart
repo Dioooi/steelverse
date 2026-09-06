@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'product_image.dart';
 
-/// The dark-gradient banner used on Category and Favorites screens
-/// (background shape image + big title + optional subtitle + back button).
-///
-/// [bannerImageUrl] is the spot to drop in a real category/collection
-/// photo later; leave null for the current placeholder gradient look.
 class ProductBannerHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -31,10 +26,6 @@ class ProductBannerHeader extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background — swap for ProductImage(imageUrl: bannerImageUrl)
-          // fit: BoxFit.cover once you have a real hardware-store photo.
-          // Until then, this renders a dark industrial gradient with a
-          // subtle tool-icon texture instead of a plain flat color.
           bannerImageUrl != null
               ? ProductImage(
             imageUrl: bannerImageUrl,
@@ -70,7 +61,6 @@ class ProductBannerHeader extends StatelessWidget {
               ],
             ),
           ),
-          // Gradient overlay so title text stays legible over any photo.
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(

@@ -1,31 +1,19 @@
-/// Core product model used across category/browse, item detail, cart,
-/// favorites, payment and refund screens.
-///
-/// [imageUrl] / [imageAsset] are intentionally nullable — leave them null
-/// during development and the UI will render a neutral placeholder
-/// (see `widgets/product_image.dart`). Once real product photos are ready,
-/// just populate one of these two fields (network URL from backend, or a
-/// bundled asset path) and every screen picks it up automatically.
 class Product {
   final String id;
   final String name;
   final String description;
   final double price;
 
-  /// Discounted / promo price. Null or >= [price] means "no promotion".
   final double? promoPrice;
 
-  final double rating; // 0.0 - 5.0
+  final double rating;
   final int reviewCount;
   final String category;
 
-  /// Network image URL — swap in once backend/CDN is ready.
   final String? imageUrl;
 
-  /// Local bundled asset path (e.g. 'assets/images/item_1.png').
   final String? imageAsset;
 
-  /// Additional gallery images for the item detail page.
   final List<String> galleryImageUrls;
 
   final bool isFavorite;
@@ -84,8 +72,6 @@ class Product {
     );
   }
 
-  /// Maps directly onto a typical REST/Firestore product document.
-  /// Adjust key names to match your backend contract when you wire it up.
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'].toString(),

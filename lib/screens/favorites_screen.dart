@@ -103,12 +103,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           onTap: () => widget.onProductTap?.call(product),
                           onFavoriteChanged: (fav) {
                             if (!fav) {
-                              // Persist to the store first -- this is the part
-                              // that was missing. Without it, the item only
-                              // disappeared from this screen's local list and
-                              // came right back the next time Favorites was
-                              // opened, because ProductStore still thought
-                              // isFavorite was true.
                               ProductStore.instance.toggleFavorite(product.id, false);
                               setState(() => _favorites.removeAt(i));
                               widget.onRemoveFavorite?.call(product);
@@ -141,16 +135,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
       ),
       bottomNavigationBar: AppBottomNav(
-        currentIndex: 2, // Favorites tab is active on this screen
+        currentIndex: 2,
         onTap: (index) {
           switch (index) {
-            case 0: // Home
+            case 0:
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
                     (route) => false,
               );
               break;
-            case 1: // Browse
+            case 1:
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -164,7 +158,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               );
               break;
-            case 2: // Favorites — already here, nothing to do
+            case 2:
               break;
           }
         },

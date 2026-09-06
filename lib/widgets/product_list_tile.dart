@@ -52,7 +52,6 @@ class ProductListTile extends StatelessWidget {
               height: 56,
             ),
             const SizedBox(width: 8),
-            // Text Column with FittedBoxes to scale down long content automatically
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +90,6 @@ class ProductListTile extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 4),
-                  // Forces PriceTag to shrink if promo price text is too long
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,

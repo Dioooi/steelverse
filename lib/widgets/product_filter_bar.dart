@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// The filter chip row under the category banner (Figma: "filter 1" /
-/// "filter 2", or "Promotion" / "filter 2"). [filters] is dynamic so any
-/// dev can pass whatever filter set the backend returns (price, rating,
-/// in-stock, brand, etc.) without touching this widget.
 class ProductFilterBar extends StatelessWidget {
   final List<String> filters;
   final String? selected;

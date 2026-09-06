@@ -7,8 +7,6 @@ import '../widgets/product_banner_header.dart';
 import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
 import 'favorites_screen.dart';
-// HomeScreen currently lives in main.dart -- adjust this path if you later
-// move it into its own file (e.g. 'home_screen.dart').
 import '../main.dart';
 
 class CategoryListScreen extends StatefulWidget {
@@ -22,13 +20,8 @@ class CategoryListScreen extends StatefulWidget {
   final void Function(Product product)? onProductTap;
   final void Function(Product product, bool isFavorite)? onFavoriteToggle;
 
-  /// Used for the Profile tab if this screen owns its own bottom nav
-  /// (no parent shell). Ignored if [onNavTap] is provided.
   final String username;
 
-  /// If your app has a shared bottom-nav shell (e.g. an IndexedStack),
-  /// pass a callback here and it takes over tab switching entirely.
-  /// If null, this screen navigates on its own via Navigator.push.
   final void Function(int index)? onNavTap;
 
   const CategoryListScreen({
@@ -51,10 +44,6 @@ class CategoryListScreen extends StatefulWidget {
 }
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
-  /// Only holds items appended via onLoadMore -- the base catalog is read
-  /// live from ProductStore.instance.products on every rebuild instead of
-  /// a one-time snapshot, so new/removed products and categories show up
-  /// immediately even while this screen is already open.
   final List<Product> _extraLoadedProducts = [];
   late String _selectedFilter;
   String _selectedCategory = 'All';
@@ -72,9 +61,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     _scrollController.addListener(_onScroll);
   }
 
-  /// Category chips are derived from whatever categories actually exist in
-  /// the current product list (plus "All"), instead of being hardcoded --
-  /// so this keeps working if an admin adds a product in a new category.
   List<String> get _availableCategories {
     final allProducts = [...ProductStore.instance.products, ..._extraLoadedProducts];
     final categories = allProducts.map((p) => p.category).toSet().toList()..sort();
@@ -90,8 +76,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   void _onScroll() {
     if (widget.onLoadMore == null || _loadingMore || !_hasMore) return;
-    // Trigger the next page a little before hitting the true bottom so it
-    // feels seamless instead of a hard stop-then-load.
     const threshold = 200.0;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - threshold) {
@@ -110,10 +94,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return rawFilter;
   }
 
-  /// Natural sort: compares embedded numbers numerically instead of
-  /// lexicographically, so "Item 2" sorts before "Item 10". Plain
-  /// String.compareTo produced Item 1, Item 10, Item 2, Item 3... which is
-  /// what looked like "filters not working."
   int _naturalCompare(String a, String b) {
     final chunker = RegExp(r'(\d+)|(\D+)');
     final aParts = chunker.allMatches(a).map((m) => m.group(0)!).toList();
@@ -131,9 +111,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   List<Product> get _visibleProducts {
-    // Read the base catalog live from the store every time, not a locally
-    // cached snapshot -- this is what makes new/removed products and
-    // favorite changes show up immediately, from any screen.
     final allProducts = [...ProductStore.instance.products, ..._extraLoadedProducts];
     List<Product> list = List.of(allProducts);
 
@@ -266,10 +243,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                               product: product,
                               onTap: () => widget.onProductTap?.call(product),
                               onFavoriteChanged: (fav) {
-                                // Persist to the single source of truth --
-                                // AnimatedBuilder below listens to ProductStore
-                                // directly, so this alone is enough to refresh
-                                // the UI everywhere, not just on this screen.
                                 ProductStore.instance.toggleFavorite(product.id, fav);
                                 widget.onFavoriteToggle?.call(product, fav);
                               },
@@ -305,29 +278,23 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             ),
           ),
           bottomNavigationBar: AppBottomNav(
-            currentIndex: 1, // Browse/Category tab is active on this screen
+            currentIndex: 1,
             onTap: (index) {
-              // If a parent shell owns navigation (e.g. an IndexedStack), let it
-              // handle the tab switch instead of pushing new routes here.
               if (widget.onNavTap != null) {
                 widget.onNavTap!(index);
                 return;
               }
 
               switch (index) {
-                case 0: // Home
-                // popUntil(isFirst) would land on WelcomePage, not HomeScreen,
-                // since HomeScreen is pushed *after* the welcome/login screen.
-                // pushAndRemoveUntil clears the stack and lands on a fresh
-                // HomeScreen instead -- same pattern ProfilePage's logout uses.
+                case 0:
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => HomeScreen(username: widget.username)),
                         (route) => false,
                   );
                   break;
-                case 1: // Browse — already here, nothing to do
+                case 1:
                   break;
-                case 2: // Favorites
+                case 2:
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -339,8 +306,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                       ),
                     ),
                   ).then((_) {
-                    // Refresh so any favorites removed on that screen show up
-                    // as unfavorited here immediately, not just on next rebuild.
                     if (mounted) setState(() {});
                   });
                   break;

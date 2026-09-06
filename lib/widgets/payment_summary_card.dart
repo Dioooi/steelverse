@@ -1,4 +1,3 @@
-// lib/widgets/payment_summary_card.dart
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Renders product pricing with optional promo discounts and labels.
-///
-/// Example:
-/// - No promo: "Price : RM20.00"
-/// - Promo:    "Price : " ~RM25.00~  "RM20.00"
 class PriceTag extends StatelessWidget {
   final double price;
   final double? promoPrice;
@@ -26,7 +21,6 @@ class PriceTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Inherits base text style from theme context if not provided
     final TextStyle baseStyle = style ??
         Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: AppColors.textPrimary,
@@ -35,7 +29,6 @@ class PriceTag extends StatelessWidget {
 
     final bool hasPromo = promoPrice != null && promoPrice! < price;
 
-    // Fast path: Single Text widget for standard pricing
     if (!hasPromo) {
       final String label = showLabel ? 'Price : ' : '';
       return Text(
@@ -44,7 +37,6 @@ class PriceTag extends StatelessWidget {
       );
     }
 
-    // Single RichText pipeline for promo pricing
     return Text.rich(
       TextSpan(
         style: baseStyle,
@@ -59,7 +51,7 @@ class PriceTag extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
-          const TextSpan(text: '  '), // Replaces SizedBox spacing
+          const TextSpan(text: '  '),
           TextSpan(
             text: _format(promoPrice!),
             style: TextStyle(

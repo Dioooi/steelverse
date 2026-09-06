@@ -1,4 +1,3 @@
-// lib/widgets/payment_method_card.dart
 import 'package:flutter/material.dart';
 import '../models/payment_method.dart';
 import '../theme/app_theme.dart';
