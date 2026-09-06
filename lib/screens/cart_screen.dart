@@ -4,7 +4,8 @@ import '../models/cart_item.dart';
 import '../models/user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/product_list_tile.dart';
-import '/screens/payment_screen.dart';
+import '../state/product_store.dart';
+import 'payment_screen.dart';
 
 /// Corresponds to the "Cart" screen: per-item checkbox, favorite heart,
 /// select-all + subtotal footer, "Proceed Payment" CTA.
@@ -45,7 +46,10 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  void _notifyParent() {
+  /// Updates local state, syncs to ProductStore (which handles SQLite persistence),
+  /// and notifies any external listeners.
+  void _syncCart() {
+    ProductStore.instance.updateCart(_items);
     widget.onCartUpdated?.call(List.of(_items));
   }
 
@@ -67,14 +71,14 @@ class _CartScreenState extends State<CartScreen> {
         item.selected = value ?? false;
       }
     });
-    _notifyParent();
+    _syncCart();
   }
 
   void _removeItem(int index) {
     setState(() {
       _items.removeAt(index);
     });
-    _notifyParent();
+    _syncCart();
   }
 
   void _updateQuantity(int index, int newQuantity) {
@@ -88,7 +92,7 @@ class _CartScreenState extends State<CartScreen> {
           selected: _items[index].selected,
         );
       });
-      _notifyParent();
+      _syncCart();
     }
   }
 
@@ -186,7 +190,6 @@ class _CartScreenState extends State<CartScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Give product tile maximum proportional space
                         Expanded(
                           flex: 3,
                           child: ProductListTile(
@@ -196,7 +199,7 @@ class _CartScreenState extends State<CartScreen> {
                             showDescription: false,
                             onCheckedChanged: (v) {
                               setState(() => item.selected = v ?? false);
-                              _notifyParent();
+                              _syncCart();
                             },
                             onFavoriteChanged: (fav) {
                               setState(() {
@@ -207,13 +210,14 @@ class _CartScreenState extends State<CartScreen> {
                                   selected: item.selected,
                                 );
                               });
+                              ProductStore.instance
+                                  .toggleFavorite(item.product.id, fav);
                               widget.onFavoriteToggle?.call(item, fav);
-                              _notifyParent();
+                              _syncCart();
                             },
                           ),
                         ),
                         const SizedBox(width: 4),
-                        // Prevent quantity action controls from overflowing right side
                         Flexible(
                           flex: 2,
                           child: FittedBox(

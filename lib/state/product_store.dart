@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../models/review.dart';
+import '../login/database_helper.dart';
 import 'product_repository.dart';
 
 /// A single shared in-memory store so favorite/cart state stays in sync
@@ -17,24 +18,22 @@ class ProductStore extends ChangeNotifier {
   final Set<String> _purchasedProductIds = {};
   final ProductRepository _repository = ProductRepository();
 
+  String _currentUsername = 'User';
+
   // Alias getter so AdminPage explicitly receives all items
   List<Product> get allProducts => List.unmodifiable(_products);
   List<Product> get products => List.unmodifiable(_products);
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
   List<Product> get favorites => _products.where((p) => p.isFavorite).toList();
 
-  /// Call this once, at app startup, instead of setProducts(). Optionally
-  /// pass [seedProducts] -- they're only written to the local database the
-  /// very first time (if it's empty), so this is safe to call on every
-  /// launch without duplicating or overwriting real data.
+  /// Call this once, at app startup, instead of setProducts().
   Future<void> init({List<Product> seedProducts = const []}) async {
     if (seedProducts.isNotEmpty) {
       await _repository.seedIfEmpty(seedProducts);
     }
     final loaded = await _repository.getAllProducts();
-    // Favorites are kept local/session-only (not part of the database
-    // requirement), so preserve whatever's currently set rather than
-    // resetting every product back to "not favorited" on reload.
+
+    // Favorites are kept local/session-only, preserving whatever is set
     final favoriteIds = _products.where((p) => p.isFavorite).map((p) => p.id).toSet();
     _products
       ..clear()
@@ -45,9 +44,20 @@ class ProductStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Legacy manual override -- prefer init() now that products live in the
-  /// local database. Still here in case anything (e.g. a test) needs to
-  /// inject a product list directly without touching storage.
+  /// Sets the active logged-in user for persistent storage.
+  void setCurrentUser(String username) {
+    _currentUsername = username;
+  }
+
+  /// Loads cart items directly from SQLite for the active user without triggering a rewrite.
+  void loadCartFromDatabase(List<CartItem> cart) {
+    _cartItems
+      ..clear()
+      ..addAll(cart);
+    notifyListeners();
+  }
+
+  /// Legacy manual override -- prefer init() now that products live in the local database.
   void setProducts(List<Product> products) {
     _products
       ..clear()
@@ -62,12 +72,9 @@ class ProductStore extends ChangeNotifier {
   // Reviews
   // -------------------------------------------------------------------
 
-  /// All reviews for a product -- seeded (randomized, but stable per
-  /// product) reviews plus any real ones submitted via [addReview].
   List<Review> reviewsFor(String productId) =>
       List.unmodifiable(_reviews[productId] ?? const []);
 
-  /// Adds a user-submitted review. Newest first.
   void addReview(String productId, Review review) {
     final list = _reviews.putIfAbsent(productId, () => []);
     list.insert(0, review);
@@ -92,8 +99,6 @@ class ProductStore extends ChangeNotifier {
     'Delivery was quick, product matches the photos.',
   ];
 
-  /// Deterministic (seeded by product id) so reviews don't reshuffle every
-  /// time the same product is reopened, but still vary product to product.
   List<Review> _generateReviewsFor(Product product) {
     final random = Random(product.id.hashCode);
     final count = 2 + random.nextInt(3); // 2-4 reviews
@@ -112,12 +117,11 @@ class ProductStore extends ChangeNotifier {
   }
 
   // -------------------------------------------------------------------
-  // Purchase tracking (used to gate "write a review" to real buyers)
+  // Purchase tracking
   // -------------------------------------------------------------------
 
   bool hasPurchased(String productId) => _purchasedProductIds.contains(productId);
 
-  /// Call this once a payment actually succeeds.
   void recordPurchase(Iterable<String> productIds) {
     _purchasedProductIds.addAll(productIds);
     notifyListeners();
@@ -127,8 +131,6 @@ class ProductStore extends ChangeNotifier {
   // Inventory Management Methods (Admin Actions)
   // -------------------------------------------------------------------
 
-  /// Adds a new product to the catalog, persisting it to the local
-  /// database first.
   Future<void> addProduct(Product product) async {
     await _repository.addProduct(product);
     _products.add(product);
@@ -136,13 +138,12 @@ class ProductStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Removes a product from the catalog by ID and removes it from the cart
-  /// if present.
   Future<void> deleteProduct(String productId) async {
     await _repository.deleteProduct(productId);
     _products.removeWhere((p) => p.id == productId);
     _cartItems.removeWhere((i) => i.product.id == productId);
     _reviews.remove(productId);
+    DatabaseHelper.instance.saveUserCart(_currentUsername, _cartItems);
     notifyListeners();
   }
 
@@ -153,19 +154,29 @@ class ProductStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProduct(Product updatedProduct) async {
+    await _repository.updateProduct(updatedProduct);
+    final index = _products.indexWhere((p) => p.id == updatedProduct.id);
+    if (index != -1) {
+      _products[index] = updatedProduct.copyWith(isFavorite: _products[index].isFavorite);
+      notifyListeners();
+    }
+  }
+
   // -------------------------------------------------------------------
-  // Cart Management Methods
+  // Cart Management Methods (With SQLite Persistence)
   // -------------------------------------------------------------------
 
-  /// Replaces the current cart list with updated items (e.g., from CartScreen edits).
+  /// Replaces current cart items and syncs with SQLite database.
   void updateCart(List<CartItem> updatedItems) {
     _cartItems
       ..clear()
       ..addAll(updatedItems);
+    DatabaseHelper.instance.saveUserCart(_currentUsername, _cartItems);
     notifyListeners();
   }
 
-  /// Adds a single product to the cart or increments its quantity if present.
+  /// Adds a single product or increments quantity, then syncs to SQLite.
   void addToCart(Product product) {
     final index = _cartItems.indexWhere((i) => i.product.id == product.id);
     if (index != -1) {
@@ -178,27 +189,21 @@ class ProductStore extends ChangeNotifier {
     } else {
       _cartItems.add(CartItem(product: product));
     }
+    DatabaseHelper.instance.saveUserCart(_currentUsername, _cartItems);
     notifyListeners();
   }
 
-  /// Removes an item by product ID.
+  /// Removes an item by product ID and updates SQLite.
   void removeFromCart(String productId) {
     _cartItems.removeWhere((i) => i.product.id == productId);
+    DatabaseHelper.instance.saveUserCart(_currentUsername, _cartItems);
     notifyListeners();
   }
 
-  /// Clears all items from the cart.
+  /// Clears all cart items and updates SQLite.
   void clearCart() {
     _cartItems.clear();
+    DatabaseHelper.instance.saveUserCart(_currentUsername, _cartItems);
     notifyListeners();
-  }
-
-  Future<void> updateProduct(Product updatedProduct) async {
-    await _repository.updateProduct(updatedProduct);
-    final index = _products.indexWhere((p) => p.id == updatedProduct.id);
-    if (index != -1) {
-      _products[index] = updatedProduct.copyWith(isFavorite: _products[index].isFavorite);
-      notifyListeners();
-    }
   }
 }
