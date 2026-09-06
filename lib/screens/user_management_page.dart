@@ -97,7 +97,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
           final user = _users[index];
           final userId = user['id'] as int;
           final username = user['username'] ?? 'Unknown';
-          final email = user['email'] ?? '';
           final isBlocked = (user['is_blocked'] ?? 0) == 1;
 
           if (username.toLowerCase() == 'admin') return const SizedBox.shrink();
@@ -126,10 +125,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   fontWeight: FontWeight.bold,
                   decoration: isBlocked ? TextDecoration.lineThrough : null,
                 ),
-              ),
-              subtitle: Text(
-                email,
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,

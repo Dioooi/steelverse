@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../login/database_helper.dart';
 import '../login/welcome_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final String username;
   final String? userId;
 
@@ -12,10 +12,194 @@ class ProfilePage extends StatelessWidget {
     this.userId,
   });
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late String _currentUsername;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUsername = widget.username;
+  }
+
   Future<void> _logout(BuildContext context) async {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const WelcomePage()),
           (route) => false,
+    );
+  }
+
+  Future<void> _showEditProfileDialog() async {
+    final usernameController = TextEditingController(text: _currentUsername);
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscurePassword = true;
+    bool obscureConfirmPassword = true;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: usernameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white38),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.orangeAccent),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Username cannot be empty';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: obscurePassword,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'New Password (Optional)',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      enabledBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white38),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.orangeAccent),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white54,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePassword = !obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty && value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    obscureText: obscureConfirmPassword,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Confirm New Password',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      enabledBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white38),
+                      ),
+                      focusedBorder: const UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.orangeAccent),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.white54,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscureConfirmPassword = !obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      if (passwordController.text.isNotEmpty && (value == null || value.isEmpty)) {
+                        return 'Please confirm your new password';
+                      }
+                      if (value != passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final newUsername = usernameController.text.trim();
+                  final newPassword = passwordController.text.trim();
+
+                  try {
+                    if (widget.userId != null) {
+                      await DatabaseHelper.instance.updateUserCredentialsById(
+                        widget.userId!,
+                        newUsername,
+                        newPassword.isNotEmpty ? newPassword : null,
+                      );
+                    } else {
+                      await DatabaseHelper.instance.updateUserCredentials(
+                        _currentUsername,
+                        newUsername,
+                        newPassword.isNotEmpty ? newPassword : null,
+                      );
+                    }
+
+                    setState(() {
+                      _currentUsername = newUsername;
+                    });
+
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profile updated successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to update profile: $e'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -26,7 +210,7 @@ class ProfilePage extends StatelessWidget {
         backgroundColor: const Color(0xFF1E1E1E),
         title: const Text('Delete Account', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Are you sure you want to delete account "$username"? This action cannot be undone.',
+          'Are you sure you want to delete account "$_currentUsername"? This action cannot be undone.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -44,17 +228,17 @@ class ProfilePage extends StatelessWidget {
     );
 
     if (confirm == true) {
-      if (userId != null) {
-        await DatabaseHelper.instance.deleteUserById(userId!);
+      if (widget.userId != null) {
+        await DatabaseHelper.instance.deleteUserById(widget.userId!);
       } else {
-        await DatabaseHelper.instance.deleteUserById(username);
+        await DatabaseHelper.instance.deleteUserById(_currentUsername);
       }
 
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Account "$username" deleted.'),
+          content: Text('Account "$_currentUsername" deleted.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -116,7 +300,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        username,
+                        _currentUsername,
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -148,7 +332,7 @@ class ProfilePage extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  'Logged in as $username',
+                                  'Logged in as $_currentUsername',
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -161,11 +345,54 @@ class ProfilePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       InkWell(
+                        onTap: _showEditProfileDialog,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.edit_rounded, color: Colors.orangeAccent),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Edit Profile',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Change username or password',
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => PurchaseHistoryPage(username: username),
+                              builder: (_) => PurchaseHistoryPage(username: _currentUsername),
                             ),
                           );
                         },
@@ -493,7 +720,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
             child: ExpansionTile(
               leading: const Icon(Icons.receipt, color: Colors.orangeAccent),
               title: Text(
-                'Order #${orderId.length > 15 ? orderId.substring(0, 15) + '...' : orderId}',
+                'Order #${orderId.length > 15 ? '${orderId.substring(0, 15)}...' : orderId}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -651,7 +878,6 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       const Text(
                         'Items Purchased:',
                         style: TextStyle(
@@ -686,7 +912,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),
