@@ -1,5 +1,6 @@
 // lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/cart_item.dart';
 import '../../models/user.dart';
 import '../../models/payment_method.dart';
@@ -9,7 +10,7 @@ import '../../widgets/payment_summary_card.dart';
 import '../../widgets/pin_dialog.dart';
 import '../../widgets/credit_card_form.dart';
 import '../../login/database_helper.dart';
-import 'payment_success_screen.dart';
+import '../screens/payment_success_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<CartItem> selectedItems;
@@ -37,18 +38,53 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _showCreditCardForm = false;
   final GlobalKey<CreditCardFormState> _creditCardFormKey = GlobalKey<CreditCardFormState>();
   final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   bool _isEditingLocation = false;
+  bool _isEditingPhone = false;
   bool _isProcessing = false;
+  bool _isLoading = true;
 
   Map<String, String> _cardData = {};
   Map<String, dynamic>? _savedCard;
+  String? _savedAddress;
+  String? _savedPhone;
+  double _userBalance = 0.0;
 
   @override
   void initState() {
     super.initState();
+    _userBalance = widget.user.balance;
     _initializePaymentMethods();
-    _locationController.text = widget.user.address;
+    _loadSavedUserInfo();
     _loadSavedCard();
+  }
+
+  Future<void> _loadSavedUserInfo() async {
+    try {
+      final userData = await DatabaseHelper.instance.getUserByUsername(widget.user.name);
+      if (userData != null) {
+        setState(() {
+          _savedAddress = userData['address'] as String?;
+          _savedPhone = userData['phone'] as String?;
+          _userBalance = (userData['balance'] as num?)?.toDouble() ?? 0.0;
+          if (_savedAddress != null && _savedAddress!.isNotEmpty) {
+            _locationController.text = _savedAddress!;
+          }
+          if (_savedPhone != null && _savedPhone!.isNotEmpty) {
+            _phoneController.text = _savedPhone!;
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadSavedCard() async {
@@ -58,16 +94,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         setState(() {
           _savedCard = card;
         });
-        print('✅ Loaded saved card for user: ${widget.user.name}');
       }
-    } catch (e) {
-      print('❌ Error loading saved card: $e');
-    }
+    } catch (e) {}
   }
 
   @override
   void dispose() {
     _locationController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -77,9 +111,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         id: 'wallet',
         name: 'Balance',
         icon: Icons.wallet,
-        balance: widget.user.balance,
+        balance: _userBalance,
         isInternal: true,
-        subtitle: 'Wallet Balance (RM${widget.user.balance.toStringAsFixed(2)})',
+        subtitle: 'Wallet Balance (RM${_userBalance.toStringAsFixed(2)})',
       ),
       PaymentMethod(
         id: 'credit_card',
@@ -123,6 +157,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
+    final phone = _phoneController.text.trim();
+    if (!_isValidMalaysiaPhone(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid Malaysia phone number (e.g. 0123456789 or 60123456789)'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     if (_selectedMethod!.id == 'wallet') {
       _showPinDialog();
     } else if (_selectedMethod!.id == 'credit_card') {
@@ -139,6 +184,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } else {
       _showExternalPayment();
     }
+  }
+
+  bool _isValidMalaysiaPhone(String phone) {
+    if (phone.isEmpty) return false;
+    String cleaned = phone.replaceAll(RegExp(r'\s+'), '');
+    if (!RegExp(r'^[0-9]+$').hasMatch(cleaned)) return false;
+    if (cleaned.length < 9 || cleaned.length > 11) return false;
+    if (cleaned.startsWith('01')) {
+      if (cleaned.length < 10 || cleaned.length > 11) return false;
+    } else if (cleaned.startsWith('60')) {
+      if (cleaned.length != 10 && cleaned.length != 11) return false;
+      if (!cleaned.startsWith('601')) return false;
+    } else {
+      return false;
+    }
+    return true;
   }
 
   void _showPinDialog() {
@@ -165,8 +226,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
 
     if (pin == widget.user.pin) {
-      if (widget.user.balance >= widget.totalAmount) {
-        widget.user.balance -= widget.totalAmount;
+      if (_userBalance >= widget.totalAmount) {
+        final newBalance = _userBalance - widget.totalAmount;
+        setState(() {
+          _userBalance = newBalance;
+        });
+
+        DatabaseHelper.instance.updateUserBalance(widget.user.name, newBalance);
 
         final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
@@ -181,6 +247,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               paymentMethod: _selectedMethod!.name,
               purchasedItemIds: purchasedIds,
               username: widget.user.name,
+              address: _locationController.text.trim(),
+              phone: _phoneController.text.trim(),
             ),
           ),
         );
@@ -235,6 +303,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             paymentMethod: _selectedMethod!.name,
             purchasedItemIds: purchasedIds,
             username: widget.user.name,
+            address: _locationController.text.trim(),
+            phone: _phoneController.text.trim(),
           ),
         ),
       );
@@ -269,12 +339,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final cardData = _creditCardFormKey.currentState?.getCardData();
 
-      print('Card Data: $cardData');
-      print('Save Card: ${cardData?['saveCard']}');
-
       if (cardData != null && cardData['saveCard'] == 'true') {
         try {
-          final result = await DatabaseHelper.instance.saveCreditCard(
+          await DatabaseHelper.instance.saveCreditCard(
             username: widget.user.name,
             cardNumber: cardData['cardNumber'] ?? '',
             cardHolderName: cardData['cardHolderName'] ?? '',
@@ -282,7 +349,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             cvv: cardData['cvv'] ?? '',
             isDefault: cardData['isDefault'] == 'true',
           );
-          print('✅ Credit card saved successfully! ID: $result');
           setState(() {
             _savedCard = {
               'card_number': cardData['cardNumber'] ?? '',
@@ -292,11 +358,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'is_default': cardData['isDefault'] == 'true' ? 1 : 0,
             };
           });
-        } catch (e) {
-          print('❌ Error saving credit card: $e');
-        }
-      } else {
-        print('Card not saved - saveCard is false or cardData is null');
+        } catch (e) {}
       }
 
       Navigator.pushReplacement(
@@ -310,6 +372,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             paymentMethod: _selectedMethod!.name,
             purchasedItemIds: purchasedIds,
             username: widget.user.name,
+            address: _locationController.text.trim(),
+            phone: _phoneController.text.trim(),
           ),
         ),
       );
@@ -346,7 +410,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -355,6 +421,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDeliveryAddress(),
+                  const SizedBox(height: 16),
+                  _buildPhoneNumber(),
                   const SizedBox(height: 16),
                   _buildProductSummary(),
                   const SizedBox(height: 16),
@@ -474,7 +542,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.user.name,
+                    'Delivery Address',
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -488,7 +556,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     setState(() {
                       _isEditingLocation = !_isEditingLocation;
                       if (!_isEditingLocation) {
-                        _locationController.text = widget.user.address;
+                        _locationController.text = _savedAddress ?? '';
                       }
                     });
                   },
@@ -546,17 +614,106 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                 ),
               ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.only(left: 28),
-              child: Text(
-                widget.user.phone,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoneNumber() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.phone, size: 20, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Phone Number',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isEditingPhone ? Icons.close : Icons.edit,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isEditingPhone = !_isEditingPhone;
+                      if (!_isEditingPhone) {
+                        _phoneController.text = _savedPhone ?? '';
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_isEditingPhone)
+              TextFormField(
+                controller: _phoneController,
+                decoration: InputDecoration(
+                  hintText: 'Enter Malaysia phone number (e.g. 0123456789)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.save, size: 20),
+                    onPressed: () {
+                      final phone = _phoneController.text.trim();
+                      if (_isValidMalaysiaPhone(phone)) {
+                        setState(() {
+                          _isEditingPhone = false;
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid Malaysia phone number (e.g. 0123456789 or 60123456789)'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                keyboardType: TextInputType.phone,
+                maxLines: 1,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: Text(
+                  _phoneController.text.isEmpty
+                      ? 'No phone number provided'
+                      : _phoneController.text,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _phoneController.text.isEmpty
+                        ? Colors.grey
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

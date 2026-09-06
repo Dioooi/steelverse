@@ -17,53 +17,66 @@ class PaymentSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildRow('Subtotal', 'RM${originalAmount.toStringAsFixed(2)}'),
-            const Divider(height: 16),
-            _buildRow('Savings', '-RM${savings.toStringAsFixed(2)}', isSavings: true),
-            const Divider(height: 16),
-            _buildRow(
-              'Total',
-              'RM${subtotal.toStringAsFixed(2)}',
-              isBold: true,
-              isTotal: true,
+            const Text(
+              'Order Summary',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Subtotal'),
+                Text('RM${subtotal.toStringAsFixed(2)}'),
+              ],
+            ),
+            if (savings > 0) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Savings'),
+                  Text(
+                    '-RM${savings.toStringAsFixed(2)}',
+                    style: const TextStyle(color: AppColors.success),
+                  ),
+                ],
+              ),
+            ],
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  'RM${subtotal.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildRow(String label, String value, {
-    bool isBold = false,
-    bool isSavings = false,
-    bool isTotal = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isBold ? FontWeight.bold : null,
-              color: isSavings ? Colors.red : null,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isBold ? FontWeight.bold : null,
-              color: isSavings ? Colors.red : isTotal ? AppColors.primary : null,
-            ),
-          ),
-        ],
       ),
     );
   }

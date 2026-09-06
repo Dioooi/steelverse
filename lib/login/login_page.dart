@@ -1,3 +1,4 @@
+// login_page.dart
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../screens/admin_page.dart';
@@ -55,11 +56,21 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       final String displayName = userMap['name'] ?? userMap['username'] ?? username;
+      final double balance = (userMap['balance'] as num?)?.toDouble() ?? 5.0;
+      final String phone = userMap['phone'] as String? ?? '';
+      final String address = userMap['address'] as String? ?? '';
+      final String pin = userMap['pin'] as String? ?? '123456';
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(username: displayName),
+          builder: (context) => HomeScreen(
+            username: displayName,
+            userBalance: balance,
+            userPhone: phone,
+            userAddress: address,
+            userPin: pin,
+          ),
         ),
       );
     } else {

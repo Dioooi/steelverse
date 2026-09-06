@@ -1,10 +1,10 @@
 // lib/models/user.dart
 class User {
-  String name;
-  String phone;
-  String address;
-  double balance;
-  String pin;
+  final String name;
+  final String phone;
+  final String address;
+  final double balance;
+  final String pin;
 
   User({
     required this.name,
@@ -14,7 +14,6 @@ class User {
     this.pin = '123456',
   });
 
-  // Add toJson/fromJson if needed
   Map<String, dynamic> toJson() => {
     'name': name,
     'phone': phone,
@@ -30,4 +29,25 @@ class User {
     balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
     pin: json['pin'] as String? ?? '123456',
   );
+
+  User copyWith({
+    String? name,
+    String? phone,
+    String? address,
+    double? balance,
+    String? pin,
+  }) {
+    return User(
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      balance: balance ?? this.balance,
+      pin: pin ?? this.pin,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'User(name: $name, phone: $phone, address: $address, balance: $balance, pin: $pin)';
+  }
 }

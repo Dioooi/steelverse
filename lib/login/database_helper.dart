@@ -22,7 +22,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -35,7 +35,11 @@ class DatabaseHelper {
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE,
         password TEXT NOT NULL,
-        is_blocked INTEGER DEFAULT 0
+        pin TEXT DEFAULT '123456',
+        is_blocked INTEGER DEFAULT 0,
+        address TEXT DEFAULT '',
+        phone TEXT DEFAULT '',
+        balance REAL DEFAULT 5.0
       )
     ''');
 
@@ -158,6 +162,27 @@ class DatabaseHelper {
       await db.execute('''
         CREATE INDEX IF NOT EXISTS idx_credit_cards_username ON credit_cards(username)
       ''');
+    }
+
+    if (oldVersion < 5) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN address TEXT DEFAULT ""');
+      } catch (e) {}
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ""');
+      } catch (e) {}
+    }
+
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN balance REAL DEFAULT 5.0');
+      } catch (e) {}
+    }
+
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN pin TEXT DEFAULT "123456"');
+      } catch (e) {}
     }
   }
 
@@ -378,6 +403,66 @@ class DatabaseHelper {
     );
   }
 
+  Future<Map<String, dynamic>?> getUserByUsername(String username) async {
+    final db = await instance.database;
+    final results = await db.query(
+      'users',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+
+  Future<int> updateUserAddress(String username, String address) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'address': address},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
+  Future<int> updateUserPhone(String username, String phone) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'phone': phone},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
+  Future<int> updateUserInfo(String username, String address, String phone) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'address': address, 'phone': phone},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
+  Future<int> updateUserBalance(String username, double balance) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'balance': balance},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
+  Future<int> updateUserPin(String username, String pin) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'pin': pin},
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
   Future<Map<String, dynamic>?> loginUser(String username, String password) async {
     final db = await instance.database;
     final results = await db.query(
@@ -415,7 +500,11 @@ class DatabaseHelper {
       'username': name,
       'email': email ?? name,
       'password': password,
+      'pin': '123456',
       'is_blocked': 0,
+      'address': '',
+      'phone': '',
+      'balance': 5.0,
     });
   }
 

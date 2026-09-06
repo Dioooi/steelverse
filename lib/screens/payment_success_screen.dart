@@ -14,6 +14,8 @@ class PaymentSuccessScreen extends StatefulWidget {
   final String paymentMethod;
   final List<String>? purchasedItemIds;
   final String? username;
+  final String? address;
+  final String? phone;
 
   const PaymentSuccessScreen({
     super.key,
@@ -24,6 +26,8 @@ class PaymentSuccessScreen extends StatefulWidget {
     required this.paymentMethod,
     this.purchasedItemIds,
     this.username,
+    this.address,
+    this.phone,
   });
 
   @override
@@ -43,6 +47,33 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
       _savePurchaseToHistory();
     });
     _recordProductPurchases();
+    _updateUserInfo();
+  }
+
+  Future<void> _updateUserInfo() async {
+    if (widget.username == null || widget.username!.isEmpty) return;
+    if (widget.address == null && widget.phone == null) return;
+
+    try {
+      final db = await DatabaseHelper.instance.database;
+
+      Map<String, dynamic> updates = {};
+      if (widget.address != null && widget.address!.isNotEmpty) {
+        updates['address'] = widget.address;
+      }
+      if (widget.phone != null && widget.phone!.isNotEmpty) {
+        updates['phone'] = widget.phone;
+      }
+
+      if (updates.isNotEmpty) {
+        await db.update(
+          'users',
+          updates,
+          where: 'username = ?',
+          whereArgs: [widget.username],
+        );
+      }
+    } catch (e) {}
   }
 
   Future<void> _savePurchaseToHistory() async {
@@ -134,9 +165,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           ? widget.purchasedItemIds!
           : ProductStore.instance.cartItems.map((i) => i.product.id).toList();
       ProductStore.instance.recordPurchase(ids);
-    } catch (e) {
-      print('Error recording purchases: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _removePurchasedItemsFromCart() async {
@@ -153,14 +182,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           widget.username!,
           ProductStore.instance.cartItems,
         );
-        print('✅ Cart saved to database after purchase for user: ${widget.username}');
       }
-
-      print('🛒 Removed ${purchasedIds.length} purchased items from cart');
-      print('📦 Remaining cart items: ${ProductStore.instance.cartItems.length}');
-    } catch (e) {
-      print('❌ Error clearing cart: $e');
-    }
+    } catch (e) {}
   }
 
   @override
@@ -304,6 +327,14 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                       const Divider(),
                       _buildDetailRow('Customer', widget.username!),
                     ],
+                    if (widget.address != null && widget.address!.isNotEmpty) ...[
+                      const Divider(),
+                      _buildDetailRow('Delivery Address', widget.address!),
+                    ],
+                    if (widget.phone != null && widget.phone!.isNotEmpty) ...[
+                      const Divider(),
+                      _buildDetailRow('Phone', widget.phone!),
+                    ],
                   ],
                 ),
               ),
@@ -372,7 +403,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                           username: widget.username ?? 'User',
                         ),
                       ),
-                          (route) => false,
+                      (route) => false,
                     );
                   }
                 },
