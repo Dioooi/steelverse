@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../models/product.dart';
 import '../state/product_store.dart';
 import '../widgets/product_image.dart';
@@ -28,6 +32,58 @@ class _AdminPageState extends State<AdminPage> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Opens the gallery or camera, then copies the picked photo into a
+  /// permanent folder inside the app's own documents directory.
+  ///
+  /// This copy step matters: the path returned by image_picker often
+  /// points at a temporary/cache location that the OS can clear at any
+  /// time, so if we stored that path directly it could go stale and break
+  /// exactly like the images did before -- just for a different reason.
+  Future<String?> _pickAndSaveImage(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: Colors.white70),
+              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined, color: Colors.white70),
+              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return null;
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source, imageQuality: 85);
+    if (pickedFile == null) return null;
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final imagesDir = Directory(p.join(docsDir.path, 'product_images'));
+    if (!await imagesDir.exists()) {
+      await imagesDir.create(recursive: true);
+    }
+
+    final extension = p.extension(pickedFile.path);
+    final fileName = 'product_${DateTime.now().millisecondsSinceEpoch}$extension';
+    final savedPath = p.join(imagesDir.path, fileName);
+
+    final bytes = await pickedFile.readAsBytes();
+    await File(savedPath).writeAsBytes(bytes);
+
+    return savedPath;
   }
 
   void _confirmDelete(BuildContext context, String productId, String productName) async {
@@ -108,7 +164,19 @@ class _AdminPageState extends State<AdminPage> {
                       height: 88,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final savedPath = await _pickAndSaveImage(dialogContext);
+                      if (savedPath != null) {
+                        imageUrlController.text = savedPath;
+                        setDialogState(() {});
+                      }
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined, color: Colors.orangeAccent, size: 18),
+                    label: const Text('Choose Photo', style: TextStyle(color: Colors.orangeAccent)),
+                  ),
+                  const SizedBox(height: 4),
                   TextField(
                     controller: nameController,
                     style: const TextStyle(color: Colors.white),
@@ -148,9 +216,9 @@ class _AdminPageState extends State<AdminPage> {
                     onChanged: (_) => setDialogState(() {}),
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
-                      labelText: 'Image URL',
+                      labelText: 'Image URL (or use Choose Photo above)',
                       labelStyle: TextStyle(color: Colors.white70),
-                      hintText: 'https://...',
+                      hintText: 'https://... or leave blank',
                       hintStyle: TextStyle(color: Colors.white38),
                     ),
                   ),
@@ -231,7 +299,19 @@ class _AdminPageState extends State<AdminPage> {
                       height: 88,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final savedPath = await _pickAndSaveImage(dialogContext);
+                      if (savedPath != null) {
+                        imageUrlController.text = savedPath;
+                        setDialogState(() {});
+                      }
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined, color: Colors.orangeAccent, size: 18),
+                    label: const Text('Choose Photo', style: TextStyle(color: Colors.orangeAccent)),
+                  ),
+                  const SizedBox(height: 4),
                   TextField(
                     controller: nameController,
                     style: const TextStyle(color: Colors.white),
@@ -271,9 +351,9 @@ class _AdminPageState extends State<AdminPage> {
                     onChanged: (_) => setDialogState(() {}),
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
-                      labelText: 'Image URL',
+                      labelText: 'Image URL (or use Choose Photo above)',
                       labelStyle: TextStyle(color: Colors.white70),
-                      hintText: 'https://...',
+                      hintText: 'https://... or leave blank',
                       hintStyle: TextStyle(color: Colors.white38),
                     ),
                   ),
