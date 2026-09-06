@@ -6,6 +6,7 @@ import '../widgets/app_bottom_nav.dart';
 import '../widgets/product_banner_header.dart';
 import '../widgets/product_list_tile.dart';
 import 'category_list_screen.dart';
+import 'market_pulse_screen.dart';
 import '../main.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -159,6 +160,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               );
               break;
             case 2:
+              break;
+            case 3:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                 builder: (_) => MarketPulseScreen(username: widget.username),
+                ),
+              );
               break;
           }
         },

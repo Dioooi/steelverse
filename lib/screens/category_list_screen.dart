@@ -7,6 +7,7 @@ import '../widgets/product_banner_header.dart';
 import '../widgets/product_filter_bar.dart';
 import '../widgets/product_list_tile.dart';
 import 'favorites_screen.dart';
+import 'market_pulse_screen.dart';
 import '../main.dart';
 
 class CategoryListScreen extends StatefulWidget {
@@ -308,6 +309,14 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   ).then((_) {
                     if (mounted) setState(() {});
                   });
+                  break;
+              case 3:
+                 Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MarketPulseScreen(username: widget.username),
+                   ),
+                  );
                   break;
               }
             },

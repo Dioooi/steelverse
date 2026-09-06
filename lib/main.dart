@@ -16,6 +16,7 @@ import 'screens/profile_page.dart';
 import 'widgets/app_bottom_nav.dart';
 import 'widgets/product_image.dart';
 import 'login/database_helper.dart';
+import 'screens/market_pulse_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -792,6 +793,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               break;
+          case 3:
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+          builder: (_) => MarketPulseScreen(username: widget.username),
+          ),
+          );
+          break;
+
           }
         },
       ),
