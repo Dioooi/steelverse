@@ -1,4 +1,3 @@
-// screens/user_management_page.dart
 import 'package:flutter/material.dart';
 import '../login/database_helper.dart';
 
@@ -76,250 +75,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
     }
   }
 
-  Future<void> _updateUserBalance(int userId, String username, double currentBalance) async {
-    final balanceController = TextEditingController(text: currentBalance.toStringAsFixed(2));
-
-    final bool? updated = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Colors.white24),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.account_balance_wallet, color: Colors.orangeAccent),
-            const SizedBox(width: 8),
-            const Text('Update Balance', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'User: $username',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: balanceController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'New Balance (RM)',
-                labelStyle: const TextStyle(color: Colors.white70),
-                prefixIcon: const Icon(Icons.money, color: Colors.orangeAccent),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white24),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.orangeAccent),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a balance';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid number';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orangeAccent,
-              foregroundColor: Colors.black,
-            ),
-            onPressed: () {
-              final balance = double.tryParse(balanceController.text);
-              if (balance != null && balance >= 0) {
-                Navigator.pop(context, true);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid balance amount'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-              }
-            },
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
-
-    if (updated == true) {
-      final newBalance = double.parse(balanceController.text);
-      await DatabaseHelper.instance.updateUserBalance(username, newBalance);
-      await _loadUsers();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Balance updated to RM${newBalance.toStringAsFixed(2)}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _updateUserPin(int userId, String username, String currentPin) async {
-    final pinController = TextEditingController(text: currentPin);
-    final confirmPinController = TextEditingController(text: currentPin);
-
-    final bool? updated = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Colors.white24),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.lock_outline, color: Colors.orangeAccent),
-            const SizedBox(width: 8),
-            const Text('Update PIN', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'User: $username',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: pinController,
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'New PIN (6 digits)',
-                labelStyle: const TextStyle(color: Colors.white70),
-                prefixIcon: const Icon(Icons.lock, color: Colors.orangeAccent),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white24),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.orangeAccent),
-                ),
-                counterText: '',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a PIN';
-                }
-                if (value.length != 6) {
-                  return 'PIN must be exactly 6 digits';
-                }
-                if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                  return 'PIN must contain only numbers';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: confirmPinController,
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Confirm PIN',
-                labelStyle: const TextStyle(color: Colors.white70),
-                prefixIcon: const Icon(Icons.lock_outline, color: Colors.orangeAccent),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white24),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.orangeAccent),
-                ),
-                counterText: '',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please confirm your PIN';
-                }
-                if (value != pinController.text) {
-                  return 'PINs do not match';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orangeAccent,
-              foregroundColor: Colors.black,
-            ),
-            onPressed: () {
-              if (pinController.text.length == 6 &&
-                  confirmPinController.text == pinController.text) {
-                Navigator.pop(context, true);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid 6-digit PIN'),
-                    backgroundColor: Colors.redAccent,
-                  ),
-                );
-              }
-            },
-            child: const Text('Update PIN'),
-          ),
-        ],
-      ),
-    );
-
-    if (updated == true) {
-      final newPin = pinController.text;
-      await DatabaseHelper.instance.updateUserPin(username, newPin);
-      await _loadUsers();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('PIN updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -328,12 +83,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
         title: const Text('User Management'),
         backgroundColor: const Color(0xFF1E1E1E),
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _loadUsers,
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.orangeAccent))
@@ -350,8 +99,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
           final username = user['username'] ?? 'Unknown';
           final email = user['email'] ?? '';
           final isBlocked = (user['is_blocked'] ?? 0) == 1;
-          final balance = (user['balance'] as num?)?.toDouble() ?? 0.0;
-          final pin = user['pin'] as String? ?? '123456';
 
           if (username.toLowerCase() == 'admin') return const SizedBox.shrink();
 
@@ -364,7 +111,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 color: isBlocked ? Colors.redAccent.withValues(alpha: 0.5) : Colors.white12,
               ),
             ),
-            child: ExpansionTile(
+            child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: isBlocked ? Colors.redAccent : Colors.orangeAccent,
                 child: Text(
@@ -380,44 +127,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   decoration: isBlocked ? TextDecoration.lineThrough : null,
                 ),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    email,
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                  Text(
-                    'Balance: RM${balance.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Colors.orangeAccent,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              subtitle: Text(
+                email,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.lock_outline,
-                      color: Colors.blueAccent,
-                      size: 20,
-                    ),
-                    tooltip: 'Update PIN',
-                    onPressed: () => _updateUserPin(userId, username, pin),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.account_balance_wallet,
-                      color: Colors.orangeAccent,
-                      size: 20,
-                    ),
-                    tooltip: 'Update Balance',
-                    onPressed: () => _updateUserBalance(userId, username, balance),
-                  ),
                   IconButton(
                     icon: Icon(
                       isBlocked ? Icons.lock_open : Icons.block,
@@ -433,158 +149,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   ),
                 ],
               ),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'User Details',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Username',
-                                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                                ),
-                                Text(
-                                  username,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Email',
-                                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                                ),
-                                Text(
-                                  email,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Balance',
-                                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                                ),
-                                Text(
-                                  'RM${balance.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    color: Colors.orangeAccent,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'PIN',
-                                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                                ),
-                                Text(
-                                  '••••••',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Status',
-                                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isBlocked
-                                        ? Colors.red.withValues(alpha: 0.2)
-                                        : Colors.green.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    isBlocked ? 'Blocked' : 'Active',
-                                    style: TextStyle(
-                                      color: isBlocked ? Colors.red : Colors.green,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.blueAccent,
-                              side: const BorderSide(color: Colors.blueAccent),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () => _updateUserPin(userId, username, pin),
-                            icon: const Icon(Icons.lock_outline, size: 16),
-                            label: const Text('Update PIN'),
-                          ),
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.orangeAccent,
-                              side: const BorderSide(color: Colors.orangeAccent),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () => _updateUserBalance(userId, username, balance),
-                            icon: const Icon(Icons.account_balance_wallet, size: 16),
-                            label: const Text('Update Balance'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
           );
         },

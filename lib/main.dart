@@ -1,4 +1,3 @@
-// main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -178,19 +177,8 @@ final User defaultUser = User(
 
 class HomeScreen extends StatefulWidget {
   final String username;
-  final double userBalance;
-  final String userPhone;
-  final String userAddress;
-  final String userPin;
 
-  const HomeScreen({
-    super.key,
-    this.username = 'User',
-    this.userBalance = 5.0,
-    this.userPhone = '',
-    this.userAddress = '',
-    this.userPin = '123456',
-  });
+  const HomeScreen({super.key, this.username = 'User'});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -205,10 +193,10 @@ class _HomeScreenState extends State<HomeScreen> {
   User get _loggedInUser {
     return User(
       name: widget.username,
-      phone: widget.userPhone.isNotEmpty ? widget.userPhone : defaultUser.phone,
-      address: widget.userAddress.isNotEmpty ? widget.userAddress : defaultUser.address,
-      balance: widget.userBalance,
-      pin: widget.userPin,
+      phone: defaultUser.phone,
+      address: defaultUser.address,
+      balance: defaultUser.balance,
+      pin: defaultUser.pin,
     );
   }
 

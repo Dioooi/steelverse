@@ -560,4 +560,32 @@ class DatabaseHelper {
       whereArgs: [id, id],
     );
   }
+
+  Future<int> updateUserCredentials(String oldUsername, String newUsername, String? newPassword) async {
+    final db = await instance.database;
+    final values = <String, dynamic>{'username': newUsername};
+    if (newPassword != null && newPassword.isNotEmpty) {
+      values['password'] = newPassword;
+    }
+    return await db.update(
+      'users',
+      values,
+      where: 'username = ?',
+      whereArgs: [oldUsername],
+    );
+  }
+
+  Future<int> updateUserCredentialsById(dynamic id, String newUsername, String? newPassword) async {
+    final db = await instance.database;
+    final values = <String, dynamic>{'username': newUsername};
+    if (newPassword != null && newPassword.isNotEmpty) {
+      values['password'] = newPassword;
+    }
+    return await db.update(
+      'users',
+      values,
+      where: 'id = ? OR username = ?',
+      whereArgs: [id, id],
+    );
+  }
 }
