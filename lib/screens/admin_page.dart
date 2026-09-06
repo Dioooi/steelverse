@@ -137,6 +137,9 @@ class _AdminPageState extends State<AdminPage> {
   void _showEditProductDialog(BuildContext context, Product product) {
     final nameController = TextEditingController(text: product.name);
     final priceController = TextEditingController(text: product.price.toStringAsFixed(2));
+    final promoPriceController = TextEditingController(
+      text: product.promoPrice != null ? product.promoPrice!.toStringAsFixed(2) : '',
+    );
     final categoryController = TextEditingController(text: product.category);
     final descriptionController = TextEditingController(text: product.description);
     final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
@@ -195,6 +198,17 @@ class _AdminPageState extends State<AdminPage> {
                     ),
                   ),
                   TextField(
+                    controller: promoPriceController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Promotion Price (RM) - optional',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      hintText: 'Leave blank for no promotion',
+                      hintStyle: TextStyle(color: Colors.white38),
+                    ),
+                  ),
+                  TextField(
                     controller: categoryController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
@@ -243,11 +257,34 @@ class _AdminPageState extends State<AdminPage> {
                 final description = descriptionController.text.trim();
                 final imageUrl = imageUrlController.text.trim();
 
+                final promoPriceText = promoPriceController.text.trim();
+                double? promoPrice;
+                bool clearPromo = false;
+                if (promoPriceText.isEmpty) {
+                  clearPromo = true;
+                } else {
+                  promoPrice = double.tryParse(promoPriceText);
+                  if (promoPrice == null || promoPrice <= 0) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid promotion price, or leave it blank.')),
+                    );
+                    return;
+                  }
+                  if (promoPrice >= price) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Promotion price must be lower than the regular price.')),
+                    );
+                    return;
+                  }
+                }
+
                 if (name.isNotEmpty && price > 0) {
                   final updatedProduct = product.copyWith(
                     name: name,
                     description: description.isEmpty ? null : description,
                     price: price,
+                    promoPrice: promoPrice,
+                    clearPromo: clearPromo,
                     category: category.isEmpty ? null : category,
                     imageUrl: imageUrl.isEmpty ? null : imageUrl,
                   );
@@ -273,6 +310,7 @@ class _AdminPageState extends State<AdminPage> {
   void _showAddProductDialog(BuildContext context) {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
+    final promoPriceController = TextEditingController();
     final categoryController = TextEditingController();
     final descriptionController = TextEditingController();
     final imageUrlController = TextEditingController();
@@ -330,6 +368,17 @@ class _AdminPageState extends State<AdminPage> {
                     ),
                   ),
                   TextField(
+                    controller: promoPriceController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Promotion Price (RM) - optional',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      hintText: 'Leave blank for no promotion',
+                      hintStyle: TextStyle(color: Colors.white38),
+                    ),
+                  ),
+                  TextField(
                     controller: categoryController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
@@ -378,12 +427,31 @@ class _AdminPageState extends State<AdminPage> {
                 final description = descriptionController.text.trim();
                 final imageUrl = imageUrlController.text.trim();
 
+                final promoPriceText = promoPriceController.text.trim();
+                double? promoPrice;
+                if (promoPriceText.isNotEmpty) {
+                  promoPrice = double.tryParse(promoPriceText);
+                  if (promoPrice == null || promoPrice <= 0) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Enter a valid promotion price, or leave it blank.')),
+                    );
+                    return;
+                  }
+                  if (promoPrice >= price) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Promotion price must be lower than the regular price.')),
+                    );
+                    return;
+                  }
+                }
+
                 if (name.isNotEmpty && price > 0) {
                   final newProduct = Product(
                     id: 'item_${DateTime.now().millisecondsSinceEpoch}',
                     name: name,
                     description: description.isEmpty ? 'Industrial grade tool component' : description,
                     price: price,
+                    promoPrice: promoPrice,
                     category: category.isEmpty ? 'Hardware Parts' : category,
                     imageUrl: imageUrl.isEmpty ? null : imageUrl,
                   );
@@ -538,7 +606,33 @@ class _AdminPageState extends State<AdminPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Text(
+                                      child: product.hasPromo
+                                          ? Row(
+                                        children: [
+                                          Text(
+                                            'RM${product.price.toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 10,
+                                              decoration: TextDecoration.lineThrough,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              'RM${product.promoPrice!.toStringAsFixed(2)}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.orangeAccent,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                          : Text(
                                         'RM${product.price.toStringAsFixed(2)}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
