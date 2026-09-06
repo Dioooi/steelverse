@@ -16,22 +16,17 @@ import 'state/product_store.dart';
 import 'login/welcome_page.dart';
 import 'screens/profile_page.dart';
 import 'widgets/app_bottom_nav.dart';
-import 'widgets/product_image.dart';
+import '../login/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Plain sqflite only works via Android/iOS platform channels. On desktop
-  // (Windows/Linux/macOS) it needs the FFI-based factory instead -- this
-  // switches automatically depending on where the app is actually running.
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  // _sampleProducts is now only a one-time seed for an empty database, not
-  // the live data source -- ProductStore.init() loads the real catalog
-  // from SQLite from here on, including any admin add/edit/delete.
   await ProductStore.instance.init(seedProducts: _sampleProducts);
-  ProductStore.instance.updateCart([]);
+
+  // Removed ProductStore.instance.updateCart([]) so user cart items persist across restarts
   runApp(const ProductDemoApp());
 }
 
@@ -213,6 +208,18 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _itemsPerPage = 10;
 
   @override
+  void initState() {
+    super.initState();
+    ProductStore.instance.setCurrentUser(widget.username);
+    _loadUserCart();
+  }
+
+  Future<void> _loadUserCart() async {
+    final userCart = await DatabaseHelper.instance.getCartForUser(widget.username);
+    ProductStore.instance.loadCartFromDatabase(userCart);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -250,8 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ProductStore.instance.toggleFavorite(product.id, fav);
       },
       onBuyNow: () {
-        // Was previously just a placeholder snackbar with no real checkout,
-        // which also meant "purchased" was never recorded for this path.
         final originalTotal = product.price;
         final payTotal = product.displayPrice;
         _push(
@@ -883,15 +888,7 @@ class _HorizontalProductCard extends StatelessWidget {
                     color: Colors.white10,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ProductImage(
-                      imageUrl: product.imageUrl,
-                      assetPath: product.imageAsset,
-                      width: double.infinity,
-                      height: 70,
-                    ),
-                  ),
+                  child: const Icon(Icons.hardware, color: Colors.orangeAccent, size: 38),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -957,15 +954,7 @@ class _GridProductCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ProductImage(
-                      imageUrl: product.imageUrl,
-                      assetPath: product.imageAsset,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
+                  child: const Icon(Icons.build_rounded, color: Colors.white70, size: 40),
                 ),
               ),
               const SizedBox(height: 8),
