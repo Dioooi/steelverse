@@ -165,7 +165,7 @@ class ProfilePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PurchaseHistoryPage(),
+                              builder: (_) => PurchaseHistoryPage(username: username),
                             ),
                           );
                         },
@@ -261,8 +261,56 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class PurchaseHistoryPage extends StatelessWidget {
-  const PurchaseHistoryPage({super.key});
+class PurchaseHistoryPage extends StatefulWidget {
+  final String? username;
+
+  const PurchaseHistoryPage({super.key, this.username});
+
+  @override
+  State<PurchaseHistoryPage> createState() => _PurchaseHistoryPageState();
+}
+
+class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
+  List<Map<String, dynamic>> _purchases = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPurchaseHistory();
+  }
+
+  Future<void> _loadPurchaseHistory() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final purchases = await DatabaseHelper.instance.getPurchaseHistory(
+          widget.username ?? 'guest'
+      );
+      setState(() {
+        _purchases = purchases;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Error loading purchases: $e';
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading purchases: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshPurchases() async {
+    await _loadPurchaseHistory();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -273,6 +321,12 @@ class PurchaseHistoryPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshPurchases,
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -288,50 +342,358 @@ class PurchaseHistoryPage extends StatelessWidget {
             ),
           ),
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.orangeAccent))
+                : _error != null
+                ? _buildErrorState()
+                : _purchases.isEmpty
+                ? _buildEmptyState()
+                : _buildPurchaseList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red.withValues(alpha: 0.6),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error ?? 'Failed to load purchase history',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _refreshPurchases,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.receipt_long_rounded,
+                size: 64,
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No Purchases Yet',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your completed order history will appear here once you make a purchase.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white54,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                ),
+                child: const Text('Go Shopping'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchaseList() {
+    return RefreshIndicator(
+      onRefresh: _refreshPurchases,
+      color: Colors.orangeAccent,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _purchases.length,
+        itemBuilder: (context, index) {
+          final purchase = _purchases[index];
+          final date = DateTime.parse(purchase['purchase_date'] as String);
+          final productNames = (purchase['product_names'] as String).split(',');
+          final totalAmount = (purchase['total_amount'] as num).toDouble();
+          final originalAmount = (purchase['original_amount'] as num).toDouble();
+          final savings = (purchase['savings'] as num).toDouble();
+          final itemsCount = purchase['items_count'] as int;
+          final paymentMethod = purchase['payment_method'] as String;
+          final status = purchase['status'] as String? ?? 'completed';
+          final orderId = purchase['order_id'] as String;
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: Colors.white.withValues(alpha: 0.08),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ExpansionTile(
+              leading: const Icon(Icons.receipt, color: Colors.orangeAccent),
+              title: Text(
+                'Order #${orderId.length > 15 ? orderId.substring(0, 15) + '...' : orderId}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 4),
+                  Row(
                     children: [
-                      Icon(
-                        Icons.receipt_long_rounded,
-                        size: 64,
-                        color: Colors.white.withValues(alpha: 0.3),
+                      Text(
+                        'Total: RM${totalAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No Purchases Yet',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: status == 'completed'
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : Colors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Your completed order history will appear here once you make a purchase.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white54,
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            color: status == 'completed'
+                                ? Colors.green
+                                : Colors.orange,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white.withValues(alpha: 0.3),
+                size: 16,
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Order Details',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Items: $itemsCount',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Divider(color: Colors.white12),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Subtotal',
+                                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                                ),
+                                Text(
+                                  'RM${originalAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                            if (savings > 0) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Savings',
+                                    style: TextStyle(color: Colors.green, fontSize: 12),
+                                  ),
+                                  Text(
+                                    '-RM${savings.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: Colors.green, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Total Paid',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'RM${totalAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.greenAccent,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Divider(color: Colors.white12),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Payment Method',
+                                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                                ),
+                                Text(
+                                  paymentMethod,
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      const Text(
+                        'Items Purchased:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...productNames.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final name = entry.value.trim();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 14,
+                                color: Colors.orangeAccent.withValues(alpha: 0.7),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${index + 1}. $name',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

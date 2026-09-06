@@ -1,10 +1,8 @@
-// main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'models/cart_item.dart';
 import 'models/product.dart';
-import 'models/review.dart';
 import 'models/user.dart';
 import 'screens/cart_screen.dart';
 import 'screens/category_list_screen.dart';
@@ -17,19 +15,14 @@ import 'login/welcome_page.dart';
 import 'screens/profile_page.dart';
 import 'widgets/app_bottom_nav.dart';
 import 'widgets/product_image.dart';
+import 'login/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Plain sqflite only works via Android/iOS platform channels. On desktop
-  // (Windows/Linux/macOS) it needs the FFI-based factory instead -- this
-  // switches automatically depending on where the app is actually running.
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  // _sampleProducts is now only a one-time seed for an empty database, not
-  // the live data source -- ProductStore.init() loads the real catalog
-  // from SQLite from here on, including any admin add/edit/delete.
   await ProductStore.instance.init(seedProducts: _sampleProducts);
   ProductStore.instance.updateCart([]);
   runApp(const ProductDemoApp());
@@ -174,23 +167,8 @@ final List<Product> _sampleProducts = [
   ),
 ];
 
-final List<Review> _sampleReviews = [
-  Review(
-    reviewerName: 'Alex T.',
-    rating: 5,
-    date: DateTime(2026, 6, 12),
-    comment: 'Great quality, exactly as described. Fast shipping too.',
-  ),
-  Review(
-    reviewerName: 'Mei L.',
-    rating: 4,
-    date: DateTime(2026, 5, 30),
-    comment: 'Good value for money, would buy again.',
-  ),
-];
-
 final User defaultUser = User(
-  name: 'Lee Jia Cheng',
+  name: 'Guest',
   phone: '(+60) 11-7281 2642',
   address: 'B 134, Ground Floor, Pusat Komersil Semambu, 25350 Kuantan',
   balance: 45.65,
@@ -212,13 +190,30 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentPage = 1;
   final int _itemsPerPage = 10;
 
+  User get _loggedInUser {
+    return User(
+      name: widget.username,
+      phone: defaultUser.phone,
+      address: defaultUser.address,
+      balance: defaultUser.balance,
+      pin: defaultUser.pin,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    // Loads this specific user's favorites from the database -- without
-    // this, favorites would still be shared across whoever's currently
-    // using the app, regardless of the per-user database changes.
     ProductStore.instance.setCurrentUser(widget.username);
+    _loadUserCart();
+  }
+
+  Future<void> _loadUserCart() async {
+    try {
+      final userCart = await DatabaseHelper.instance.getCartForUser(widget.username);
+      ProductStore.instance.loadCartFromDatabase(userCart);
+    } catch (e) {
+      print('Error loading cart: $e');
+    }
   }
 
   @override
@@ -232,11 +227,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openCart(BuildContext context) {
+    final user = _loggedInUser;
     _push(
       context,
       CartScreen(
         items: ProductStore.instance.cartItems,
-        user: defaultUser,
+        user: user,
         onCartUpdated: (updatedItems) {
           ProductStore.instance.updateCart(updatedItems);
         },
@@ -245,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildItemDetailScreen(BuildContext context, Product product) {
+    final user = _loggedInUser;
     return ItemDetailScreen(
       product: product,
       username: widget.username,
@@ -259,8 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ProductStore.instance.toggleFavorite(product.id, fav);
       },
       onBuyNow: () {
-        // Was previously just a placeholder snackbar with no real checkout,
-        // which also meant "purchased" was never recorded for this path.
         final originalTotal = product.price;
         final payTotal = product.displayPrice;
         _push(
@@ -270,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
             totalAmount: payTotal,
             originalAmount: originalTotal,
             savings: originalTotal - payTotal,
-            user: defaultUser,
+            user: user,
           ),
         );
       },

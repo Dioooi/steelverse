@@ -22,13 +22,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3, // Increment version
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
+    // Users table
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +40,7 @@ class DatabaseHelper {
       )
     ''');
 
+    // Cart items table
     await db.execute('''
       CREATE TABLE cart_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +54,32 @@ class DatabaseHelper {
         selected INTEGER NOT NULL DEFAULT 1,
         UNIQUE(username, product_id)
       )
+    ''');
+
+    // NEW: Purchase history table
+    await db.execute('''
+      CREATE TABLE purchase_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        order_id TEXT NOT NULL UNIQUE,
+        product_ids TEXT NOT NULL,  -- Store as JSON array or comma-separated
+        product_names TEXT NOT NULL, -- Store as JSON array or comma-separated
+        total_amount REAL NOT NULL,
+        original_amount REAL NOT NULL,
+        savings REAL NOT NULL,
+        items_count INTEGER NOT NULL,
+        payment_method TEXT NOT NULL,
+        purchase_date TEXT NOT NULL, -- ISO 8601 format
+        status TEXT DEFAULT 'completed' -- completed, pending, cancelled
+      )
+    ''');
+
+    // NEW: Index for faster queries
+    await db.execute('''
+      CREATE INDEX idx_purchase_history_username ON purchase_history(username)
+    ''');
+    await db.execute('''
+      CREATE INDEX idx_purchase_history_date ON purchase_history(purchase_date)
     ''');
   }
 
@@ -72,9 +100,36 @@ class DatabaseHelper {
         )
       ''');
     }
+
+    // Add purchase history table in version 3
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS purchase_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL,
+          order_id TEXT NOT NULL UNIQUE,
+          product_ids TEXT NOT NULL,
+          product_names TEXT NOT NULL,
+          total_amount REAL NOT NULL,
+          original_amount REAL NOT NULL,
+          savings REAL NOT NULL,
+          items_count INTEGER NOT NULL,
+          payment_method TEXT NOT NULL,
+          purchase_date TEXT NOT NULL,
+          status TEXT DEFAULT 'completed'
+        )
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_purchase_history_username ON purchase_history(username)
+      ''');
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_purchase_history_date ON purchase_history(purchase_date)
+      ''');
+    }
   }
 
-  // --- Cart Database Methods ---
+  // --- Cart Database Methods --- (keep existing)
 
   Future<List<CartItem>> getCartForUser(String username) async {
     final db = await instance.database;
@@ -105,14 +160,12 @@ class DatabaseHelper {
     final db = await instance.database;
     final batch = db.batch();
 
-    // Clear old cart entries for the specific user
     batch.delete(
       'cart_items',
       where: 'username = ?',
       whereArgs: [username],
     );
 
-    // Insert updated list of cart items
     for (final item in items) {
       batch.insert('cart_items', {
         'username': username,
@@ -129,7 +182,105 @@ class DatabaseHelper {
     await batch.commit(noResult: true);
   }
 
-  // Existing user management methods...
+  // --- NEW: Purchase History Methods ---
+
+  /// Save a purchase record
+  Future<int> savePurchase({
+    required String username,
+    required String orderId,
+    required List<String> productIds,
+    required List<String> productNames,
+    required double totalAmount,
+    required double originalAmount,
+    required double savings,
+    required int itemsCount,
+    required String paymentMethod,
+    required DateTime purchaseDate,
+    String status = 'completed',
+  }) async {
+    final db = await instance.database;
+
+    return await db.insert('purchase_history', {
+      'username': username,
+      'order_id': orderId,
+      'product_ids': productIds.join(','), // Store as comma-separated string
+      'product_names': productNames.join(','),
+      'total_amount': totalAmount,
+      'original_amount': originalAmount,
+      'savings': savings,
+      'items_count': itemsCount,
+      'payment_method': paymentMethod,
+      'purchase_date': purchaseDate.toIso8601String(),
+      'status': status,
+    });
+  }
+
+  /// Get purchase history for a specific user
+  Future<List<Map<String, dynamic>>> getPurchaseHistory(String username) async {
+    final db = await instance.database;
+    final results = await db.query(
+      'purchase_history',
+      where: 'username = ?',
+      whereArgs: [username],
+      orderBy: 'purchase_date DESC',
+    );
+    return results;
+  }
+
+  /// Get all purchase history (for admin)
+  Future<List<Map<String, dynamic>>> getAllPurchaseHistory() async {
+    final db = await instance.database;
+    final results = await db.query(
+      'purchase_history',
+      orderBy: 'purchase_date DESC',
+    );
+    return results;
+  }
+
+  /// Get purchase by order ID
+  Future<Map<String, dynamic>?> getPurchaseByOrderId(String orderId) async {
+    final db = await instance.database;
+    final results = await db.query(
+      'purchase_history',
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+
+  /// Update purchase status
+  Future<int> updatePurchaseStatus(String orderId, String status) async {
+    final db = await instance.database;
+    return await db.update(
+      'purchase_history',
+      {'status': status},
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+    );
+  }
+
+  /// Delete a purchase record
+  Future<int> deletePurchase(String orderId) async {
+    final db = await instance.database;
+    return await db.delete(
+      'purchase_history',
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+    );
+  }
+
+  /// Clear all purchase history for a user
+  Future<int> clearUserPurchaseHistory(String username) async {
+    final db = await instance.database;
+    return await db.delete(
+      'purchase_history',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+  }
+
+  // --- Existing User Management Methods --- (keep all your existing methods)
+
   Future<Map<String, dynamic>?> loginUser(String username, String password) async {
     final db = await instance.database;
     final results = await db.query(

@@ -1,4 +1,3 @@
-// lib/screens/payment/payment_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/cart_item.dart';
 import '../../models/user.dart';
@@ -44,6 +43,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _initializePaymentMethods();
     _locationController.text = widget.user.address;
+    print('🔐 PaymentScreen initState - User: ${widget.user.name}');
+    print('🔐 User object: ${widget.user}');
+    print('🔐 User name length: ${widget.user.name.length}');
   }
 
   @override
@@ -56,7 +58,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _paymentMethods.addAll([
       PaymentMethod(
         id: 'wallet',
-        name: 'Balance', // Changed from 'ShopeePay' to 'Balance'
+        name: 'Balance',
         icon: Icons.wallet,
         balance: widget.user.balance,
         isInternal: true,
@@ -150,6 +152,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
+        print('✅ Payment successful for user: ${widget.user.name}');
+        print('📦 Purchased items: $purchasedIds');
+        print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -160,6 +166,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               itemsCount: widget.selectedItems.length,
               paymentMethod: _selectedMethod!.name,
               purchasedItemIds: purchasedIds,
+              username: widget.user.name,
             ),
           ),
         );
@@ -203,6 +210,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
+      print('✅ External payment successful for user: ${widget.user.name}');
+      print('📦 Purchased items: $purchasedIds');
+      print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -213,6 +224,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             itemsCount: widget.selectedItems.length,
             paymentMethod: _selectedMethod!.name,
             purchasedItemIds: purchasedIds,
+            username: widget.user.name,
           ),
         ),
       );
@@ -245,6 +257,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final purchasedIds = widget.selectedItems.map((item) => item.product.id).toList();
 
+      print('✅ Credit card payment successful for user: ${widget.user.name}');
+      print('📦 Purchased items: $purchasedIds');
+      print('👤 Passing username to PaymentSuccessScreen: ${widget.user.name}');
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -255,6 +271,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             itemsCount: widget.selectedItems.length,
             paymentMethod: _selectedMethod!.name,
             purchasedItemIds: purchasedIds,
+            username: widget.user.name,
           ),
         ),
       );
@@ -288,6 +305,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
@@ -336,7 +355,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey,
+                  color: Colors.grey.withValues(alpha: 0.3),
                   spreadRadius: 1,
                   blurRadius: 4,
                   offset: const Offset(0, -2),
@@ -367,14 +386,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   width: 120,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: _proceedToPayment,
+                    onPressed: _isProcessing ? null : _proceedToPayment,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
+                    child: _isProcessing
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Text(
                       'Checkout',
                       style: TextStyle(color: Colors.white),
                     ),
@@ -390,6 +418,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildDeliveryAddress() {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -492,6 +524,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildProductSummary() {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
