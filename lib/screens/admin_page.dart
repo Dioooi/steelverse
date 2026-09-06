@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../state/product_store.dart';
+import '../widgets/product_image.dart';
 import 'user_management_page.dart';
 
 class AdminPage extends StatefulWidget {
@@ -82,6 +83,7 @@ class _AdminPageState extends State<AdminPage> {
     final priceController = TextEditingController(text: product.price.toStringAsFixed(2));
     final categoryController = TextEditingController(text: product.category);
     final descriptionController = TextEditingController(text: product.description);
+    final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
 
     showDialog(
       context: context,
@@ -93,45 +95,67 @@ class _AdminPageState extends State<AdminPage> {
             side: const BorderSide(color: Colors.white24),
           ),
           title: const Text('Edit Product', style: TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Product Name',
-                    labelStyle: TextStyle(color: Colors.white70),
+          content: StatefulBuilder(
+            builder: (context, setDialogState) => SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: ProductImage(
+                      imageUrl: imageUrlController.text.isEmpty ? null : imageUrlController.text,
+                      assetPath: product.imageAsset,
+                      width: 88,
+                      height: 88,
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: priceController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Price (RM)',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Product Name',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: categoryController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  TextField(
+                    controller: priceController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Price (RM)',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: descriptionController,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  TextField(
+                    controller: categoryController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-              ],
+                  TextField(
+                    controller: descriptionController,
+                    maxLines: 3,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  TextField(
+                    controller: imageUrlController,
+                    onChanged: (_) => setDialogState(() {}),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Image URL',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      hintText: 'https://...',
+                      hintStyle: TextStyle(color: Colors.white38),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -149,18 +173,15 @@ class _AdminPageState extends State<AdminPage> {
                 final price = double.tryParse(priceController.text) ?? product.price;
                 final category = categoryController.text.trim();
                 final description = descriptionController.text.trim();
+                final imageUrl = imageUrlController.text.trim();
 
                 if (name.isNotEmpty && price > 0) {
-                  final updatedProduct = Product(
-                    id: product.id,
+                  final updatedProduct = product.copyWith(
                     name: name,
-                    description: description.isEmpty ? product.description : description,
+                    description: description.isEmpty ? null : description,
                     price: price,
-                    category: category.isEmpty ? product.category : category,
-                    promoPrice: product.promoPrice,
-                    rating: product.rating,
-                    reviewCount: product.reviewCount,
-                    isFavorite: product.isFavorite,
+                    category: category.isEmpty ? null : category,
+                    imageUrl: imageUrl.isEmpty ? null : imageUrl,
                   );
 
                   Navigator.pop(dialogContext);
@@ -186,6 +207,7 @@ class _AdminPageState extends State<AdminPage> {
     final priceController = TextEditingController();
     final categoryController = TextEditingController();
     final descriptionController = TextEditingController();
+    final imageUrlController = TextEditingController();
 
     showDialog(
       context: context,
@@ -197,45 +219,66 @@ class _AdminPageState extends State<AdminPage> {
             side: const BorderSide(color: Colors.white24),
           ),
           title: const Text('Add New Product', style: TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Product Name',
-                    labelStyle: TextStyle(color: Colors.white70),
+          content: StatefulBuilder(
+            builder: (context, setDialogState) => SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: ProductImage(
+                      imageUrl: imageUrlController.text.isEmpty ? null : imageUrlController.text,
+                      width: 88,
+                      height: 88,
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: priceController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Price (RM)',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Product Name',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: categoryController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  TextField(
+                    controller: priceController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Price (RM)',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-                TextField(
-                  controller: descriptionController,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    labelStyle: TextStyle(color: Colors.white70),
+                  TextField(
+                    controller: categoryController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-              ],
+                  TextField(
+                    controller: descriptionController,
+                    maxLines: 3,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  TextField(
+                    controller: imageUrlController,
+                    onChanged: (_) => setDialogState(() {}),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Image URL',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      hintText: 'https://...',
+                      hintStyle: TextStyle(color: Colors.white38),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -253,6 +296,7 @@ class _AdminPageState extends State<AdminPage> {
                 final price = double.tryParse(priceController.text) ?? 0.0;
                 final category = categoryController.text.trim();
                 final description = descriptionController.text.trim();
+                final imageUrl = imageUrlController.text.trim();
 
                 if (name.isNotEmpty && price > 0) {
                   final newProduct = Product(
@@ -261,6 +305,7 @@ class _AdminPageState extends State<AdminPage> {
                     description: description.isEmpty ? 'Industrial grade tool component' : description,
                     price: price,
                     category: category.isEmpty ? 'Hardware Parts' : category,
+                    imageUrl: imageUrl.isEmpty ? null : imageUrl,
                   );
 
                   Navigator.pop(dialogContext);
@@ -376,16 +421,15 @@ class _AdminPageState extends State<AdminPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: Container(
+                                  child: SizedBox(
                                     width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.05),
+                                    child: ProductImage(
+                                      imageUrl: product.imageUrl,
+                                      assetPath: product.imageAsset,
+                                      width: double.infinity,
+                                      height: double.infinity,
                                       borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Icon(
-                                      Icons.build_rounded,
-                                      color: Colors.white70,
-                                      size: 28,
+                                      placeholderIcon: Icons.build_rounded,
                                     ),
                                   ),
                                 ),
