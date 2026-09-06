@@ -213,6 +213,15 @@ class _HomeScreenState extends State<HomeScreen> {
   final int _itemsPerPage = 10;
 
   @override
+  void initState() {
+    super.initState();
+    // Loads this specific user's favorites from the database -- without
+    // this, favorites would still be shared across whoever's currently
+    // using the app, regardless of the per-user database changes.
+    ProductStore.instance.setCurrentUser(widget.username);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

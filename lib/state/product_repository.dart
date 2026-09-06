@@ -14,6 +14,7 @@ class ProductRepository {
   ProductRepository._internal();
 
   static const String _tableName = 'products';
+  static const String _favoritesTableName = 'favorites';
   static Database? _database;
 
   /// Get an instance of database
@@ -27,10 +28,16 @@ class ProductRepository {
   Future<Database> initDatabase() async {
     final getDirectory = await getApplicationDocumentsDirectory();
     final path = join(getDirectory.path, 'steelverse.db');
-    return openDatabase(path, onCreate: _onCreate, version: 1);
+    return openDatabase(
+      path,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+      version: 2,
+    );
   }
 
-  /// Create the table
+  /// Create the table(s) -- fires for brand new installs, already at the
+  /// latest version, so favorites is included here too.
   void _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $_tableName (
@@ -48,6 +55,28 @@ class ProductRepository {
         stock INTEGER
       )
     ''');
+    await db.execute('''
+      CREATE TABLE $_favoritesTableName (
+        username TEXT NOT NULL,
+        productId TEXT NOT NULL,
+        PRIMARY KEY (username, productId)
+      )
+    ''');
+  }
+
+  /// Fires for anyone who already had the database from before favorites
+  /// existed (schema version 1), so their existing product data is kept
+  /// and only the new table gets added.
+  void _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $_favoritesTableName (
+          username TEXT NOT NULL,
+          productId TEXT NOT NULL,
+          PRIMARY KEY (username, productId)
+        )
+      ''');
+    }
   }
 
   /// SQLite columns are plain scalar types, so galleryImageUrls (a List)
@@ -126,5 +155,33 @@ class ProductRepository {
       batch.insert(_tableName, _toRow(product));
     }
     await batch.commit(noResult: true);
+  }
+
+  /// All product ids this specific user has favorited.
+  Future<Set<String>> getFavoriteIds(String username) async {
+    final db = await database;
+    final rows = await db.query(
+      _favoritesTableName,
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+    return rows.map((row) => row['productId'] as String).toSet();
+  }
+
+  Future<void> setFavorite(String username, String productId, bool isFavorite) async {
+    final db = await database;
+    if (isFavorite) {
+      await db.insert(
+        _favoritesTableName,
+        {'username': username, 'productId': productId},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } else {
+      await db.delete(
+        _favoritesTableName,
+        where: 'username = ? AND productId = ?',
+        whereArgs: [username, productId],
+      );
+    }
   }
 }
