@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../state/product_store.dart';
 import '../main.dart';
+import '../../login/database_helper.dart';
 import '../../screens/profile_page.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
@@ -32,6 +33,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   bool _isSaving = false;
   bool _saveError = false;
   String? _errorMessage;
+  bool _isSaved = false;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   Future<void> _savePurchaseToHistory() async {
     if (widget.username == null || widget.username!.isEmpty) {
       setState(() {
+        _isSaved = true;
         _saveError = true;
         _errorMessage = 'Username not found - using default';
       });
@@ -58,7 +61,40 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
     });
 
     try {
+      final productIds = widget.purchasedItemIds ??
+          ProductStore.instance.cartItems.map((i) => i.product.id).toList();
+
+      final productNames = widget.purchasedItemIds != null
+          ? ProductStore.instance.cartItems
+          .where((item) => widget.purchasedItemIds!.contains(item.product.id))
+          .map((item) => item.product.name)
+          .toList()
+          : ProductStore.instance.cartItems.map((item) => item.product.name).toList();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final userPrefix = widget.username!.length >= 3
+          ? widget.username!.substring(0, 3).toUpperCase()
+          : widget.username!.toUpperCase().padRight(3, 'X');
+      final orderId = 'ORD-$timestamp-$userPrefix';
+
+      final result = await DatabaseHelper.instance.savePurchase(
+        username: widget.username!,
+        orderId: orderId,
+        productIds: productIds,
+        productNames: productNames,
+        totalAmount: widget.totalAmount,
+        originalAmount: widget.originalAmount,
+        savings: widget.savings,
+        itemsCount: widget.itemsCount,
+        paymentMethod: widget.paymentMethod,
+        purchaseDate: DateTime.now(),
+        status: 'completed',
+      );
+
+      final savedPurchases = await DatabaseHelper.instance.getPurchaseHistory(widget.username!);
+
       setState(() {
+        _isSaved = true;
         _isSaving = false;
       });
 
@@ -71,12 +107,13 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
 
       setState(() {
         _saveError = true;
         _errorMessage = e.toString();
         _isSaving = false;
+        _isSaved = true;
       });
 
       if (mounted) {
