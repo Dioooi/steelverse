@@ -7,6 +7,7 @@ import '../models/product.dart';
 import '../state/product_store.dart';
 import '../widgets/product_image.dart';
 import 'user_management_page.dart';
+import 'admin_orders_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -32,6 +33,13 @@ class _AdminPageState extends State<AdminPage> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _showOrdersPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminOrdersPage()),
+    );
   }
 
   Future<String?> _pickAndSaveImage(BuildContext context) async {
@@ -501,6 +509,12 @@ class _AdminPageState extends State<AdminPage> {
                       ),
                     ),
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.receipt_long_rounded, color: Colors.orangeAccent),
+                      tooltip: 'View All Orders',
+                      onPressed: () => _showOrdersPage(context),
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.people_alt_outlined, color: Colors.orangeAccent),
                       tooltip: 'User Management',
