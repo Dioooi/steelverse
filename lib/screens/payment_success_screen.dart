@@ -348,15 +348,15 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Icon(Icons.local_shipping, color: AppColors.primary),
-                        const SizedBox(width: 12),
-                        const Expanded(
+                        SizedBox(width: 12),
+                        Expanded(
                           child: Text(
                             'Your items will be delivered within 3-5 business days',
                             style: TextStyle(
@@ -368,11 +368,11 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       children: [
-                        const SizedBox(width: 40),
-                        const Expanded(
+                        SizedBox(width: 40),
+                        Expanded(
                           child: Text(
                             'Thank you for your patience. Your order is being processed.',
                             style: TextStyle(
