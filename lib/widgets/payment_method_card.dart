@@ -17,7 +17,7 @@ class PaymentMethodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+      color: isSelected ? AppColors.primary : Colors.white,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
